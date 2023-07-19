@@ -1,0 +1,2 @@
+# intranet
+Návody pro intranet
