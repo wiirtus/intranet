@@ -1,10 +1,5 @@
 # FortiClient
 
-
-
-
-
-
 ## Table of Contents
 
 - [FortiClient](#forticlient)
@@ -17,10 +12,11 @@
 ## Introduction
 
 ***
+
 ## Topic 1
 
 ***
+
 ### Sub-Topic 1
 
 ## Topic 2
-
