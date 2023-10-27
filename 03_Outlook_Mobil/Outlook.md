@@ -11,3 +11,6 @@ Doména: **swsi\\** **svůj login**
 Server: **omega19.sws.cz**
 
 Doména: **swsi**
+ 
+
+ testtsalknflfbf 
