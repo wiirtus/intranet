@@ -2,7 +2,7 @@
 
 ## Download and installation
 
-* Download the installation file from [Sharepoint](https://sws-my.sharepoint.com/:f:/g/personal/mjurca_sws_cz/EiexjBTNgzFDp_AT3tAT4_gBOpFXadC6gJNO7sD89VUhHQ?e=UiRv3B)
+* Download the installation file from [Sharepoint](https://also-my.sharepoint.com/:f:/p/michal_jurca/EqknBXe9uj9Op_06uL-_yCEBmEdUnFIgIoQ_9jCMXD1j8w?e=9ezEaW)
 * Open the downloaded **.dmg** file and run **Install.mpkg**
 * The FortiClient VPN Installer window will appear. During the installation, you will receive the several prompts - continue, continue, continue, install, close.
 * Click **Allow** when you receive the following prompt
@@ -36,6 +36,8 @@ your profile.
 * Go to the FortiClient
 menu icon. Click it, and select
 **Open FortiClient Console.**
+* Under the **Zero Trust Telemetry** tab, put **fortisrv.sws.cz**
+
 * Under the **Remote Access** tab, click  **Configure VPN**
 
 * Set up:
