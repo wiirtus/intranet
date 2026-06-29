@@ -165,128 +165,177 @@ straně příjemce.
 | `Z…` | Exporty B2C oblasti / e-shopových nastavení (`ZCompany`, `ZShop`) |
 | `Conet…` | Varianty přenášené kanálem **Conet** |
 
-> **TODO k potvrzení:** Význam `_El` (element vs. atribut) a `_Schema` (XSD) je odvozený – prosím
-> potvrdit.
+> **TODO k potvrzení:** Význam `_El` (element vs. atribut) a `_Schema` (XSD) je odvozený – prosím potvrdit.
 
 ---
 
-## Katalog exportů – standardní
+## Katalog exportů
 
-Sloupce: **ResultType** · **_El** (existuje element varianta) · **_Schema** (existuje schéma) ·
-**Popis**. Podporu metod `GetResult` / `ByCode` / `ByFromTo` doplnit dle reálné konfigurace
-(**TODO** – ve zdroji byla pro všechny záznamy nastavena plná časová okna).
+Každý export existuje ve variantách `_El` (data jako XML elementy místo atributů) a `_Schema` (vrací XSD schéma struktury). Sloupce `_El` a `_Schema` v tabulkách níže označují dostupnost těchto variant.
 
-| ResultType | _El | _Schema | Popis |
-|---|:--:|:--:|---|
-| `AttCpsSti` | ✓ | ✓ | Přílohy parametrů StoItemu |
-| `AttSti` | ✓ | ✓ | Přílohy StoItemů |
-| `ComBank` | ✓ | ✓ | Seznam bankovních účtů klienta |
-| `ComShipTo` | ✓ | ✓ | Seznam dodacích adres (ShipTo) |
-| `ConetDocTrInv` | – | ✓ | Přenos dokladu – faktura přes Conet |
-| `ConetPriceOrd` | ✓ | ✓ | Cena objednávky přes Conet |
-| `Config` | ✓ | ✓ | Data konfigurátoru |
-| `CpsSti` | – | ✓ | Parametry StoItemů včetně definice parametru |
-| `CpsStiVal` | ✓ | ✓ | Parametry StoItemů – pouze Název × Hodnota (filtr dle kódu StoItemu) |
-| `DocTrDel` | – | ✓ | Přenos dokladu – dodací list |
-| `DocTrExp` | ✓ | ✓ | Přenos dokladu – expedice (formát pro import do I6) |
-| `DocTrInv` | – | ✓ | Přenos dokladu – faktura (formát pro import do I6) |
-| `DocTrLoa` | – | ✓ | Přenos dokladu – zápůjčka |
-| `Order` | – | ✓ | Export objednávek s položkami vč. ShipTo a B2C. Bez parametru vrací všechny otevřené objednávky |
-| `OrderDelivMode` | ✓ | ✓ | Číselník způsobů dopravy pro `Order.asmx/Create` |
-| `OrderPaymentMode` | ✓ | ✓ | Číselník způsobů platby pro `Order.asmx/Create` |
-| `OrderQueue` | ✓ | ✓ | Číselník front pro `Order.asmx/Create/Order/@QudId` |
-| `OrderToken` | ✓ | ✓ | Informace o tokenech objednávek |
-| `Queue` | ✓ | ✓ | Dodací termín |
-| `Reclaim` | – | – | Detaily reklamací (`GetResult` / `GetResultByCode`) |
-| `SCategorySys` | ✓ | ✓ | Katalog systémových kategorií |
-| `Service` | – | – | Detaily servisů (`GetResult` / `GetResultByCode`) |
-| `SPresentTree` | ✓ | ✓ | Hierarchický prezentační strom StoItemů (`IdP` = rodič, `Sort` = 3 znaky/úroveň; ByCode filtruje dle `IdP`) |
-| `SPresentTreeType` | ✓ | ✓ | Typ SPresentTree (export celého typu stromu: `resultType=SPresentTree&code=Id`) |
-| `StiPacking` | ✓ | ✓ | Balení StoItemu |
-| `StiRelation` | ✓ | ✓ | Vztahy mezi StoItemy |
-| `StiRelationCO` | ✓ | ✓ | Vztahy – Conditional Offer |
-| `StoItemActive` | ✓ | ✓ | Seznam aktivních produktů |
-| `StoItemBase` | ✓ | ✓ | Základní informace o produktech |
-| `StoItemEAN` | ✓ | ✓ | EAN kódy StoItemů |
-| `StoItemEPREL` | ✓ | ✓ | EPREL informace StoItemu |
-| `StoItemGPSR` | – | – | GPSR informace produktu |
-| `StoItemHook` | ✓ | ✓ | „Zaháknuté" produkty (hooked) |
-| `StoItemList` | ✓ | ✓ | Seznam StoItemů dle podmínky v `Code` (`{StrId}XXX` / `{ScaId}XXX` / `{CpaId}XXX`) |
-| `StoItemNode` | ✓ | ✓ | Vazby StoItem – TreeNode |
-| `StoItemPriceEU` | ✓ | ✓ | Koncové ceny (End User) |
-| `StoItemPriceOrd` | ✓ | ✓ | Nákupní (objednací) ceny |
-| `StoItemPriceOrdCur` | ✓ | ✓ | Nákupní ceny v měně uživatele |
-| `StoItemQtyFree` | ✓ | ✓ | Skladová dostupnost |
-| `StoItemQtyFreeBO` | ✓ | ✓ | Skladová dostupnost + blokované |
-| `StoItemQtyFreeEx` | ✓ | ✓ | Dostupnost + termín nejbližšího naskladnění |
-| `StoItemQtyFreeExQud` | ✓ | ✓ | Dostupnost + naskladnění (rozpad dle `QudId`) |
-| `StoItemQtyFreeExQudT` | ✓ | ✓ | Dostupnost + naskladnění (součet všech skladů uživatele) |
-| `StoItemShop` | ✓ (jen `_El`) | – | Základní info o produktech – feed pro e-shop |
-| `StoItemShoptet` | ✓ (jen `_El`) | – | Základní info o produktech – feed pro Shoptet |
-| `StoItemSiv` | ✓ | ✓ | Export pro I6 modul StoItemCom |
-| `StrStiSync` | ✓ | ✓ | Synchronizace SPresentTree + StoItem (`Code` = Id stromu SPresentTree) |
-
----
-
-## Katalog exportů – speciální (`X-…`) a B2C (`Z…`)
+### Přílohy
 
 | ResultType | _El | _Schema | Popis |
 |---|:--:|:--:|---|
-| `X-AttSti` | ✓ | ✓ | Speciální přílohy StoItemů (SWS w_x přílohy) |
-| `X-ConetAttSti` | ✓ | ✓ | Speciální přílohy StoItemů (Conet, SWS w_x) |
-| `X-ConetCpsSti` | – | ✓ | Parametry StoItemů včetně definice (Conet) |
-| `X-ConetSipPrcZMin` | ✓ | ✓ | Minimální prodejní cena (Conet) |
-| `X-ConetStoItemQtyFreeEx` | ✓ | ✓ | Dostupnost + naskladnění (Conet) |
-| `X-Cybex` | ✓ | ✓ | Speciální export pro Cybex |
-| `X-DeletedStiCode` | ✓ | ✓ | Seznam smazaných StiCode (lze využít pro nový produkt) |
-| `X-Diskont` | – | ✓ | Export pro Diskontní nákupy (vč. StiRelation, ImgGal, SPresentTree) |
-| `X-DocTrDel` | – | ✓ | Přenos dokladu – dodací list (cena s poplatkem) |
-| `X-EntecCompany` | ✓ | ✓ | Firmy z Entec DB |
-| `X-EntecContact` | ✓ | ✓ | Kontakty z Entec DB |
-| `X-GetLicKey` | ✓ | ✓ | Licenční klíč pro Order Id |
-| `X-GetToken` | ✓ | ✓ | MS ESD token pro Order Id |
-| `X-HPTRON` | ✓ | ✓ | Speciální export pro HP Tronic |
-| `X-IniPrevDay` | ✓ | ✓ | Položky faktur z předchozího dne |
-| `X-OpenOrdItemWithQueDateShip` | ✓ | ✓ | Položky otevřených objednávek s odhadem data expedice |
-| `X-OrdTrack` | ✓ | ✓ | URL pro sledování zásilky dle kódu objednávky |
-| `X-RatePL` | ✓ | ✓ | Kurz použitý v ceníku |
-| `X-ShopBaseCZC` | ✓ | ✓ | Základní info o produktech – feed pro CZC |
-| `X-SipPrcZMin` | ✓ | ✓ | Minimální prodejní cena |
-| `X-SpcStoItemBase` | ✓ | ✓ | Konfigurovatelný feed StoItemBase (dle nastavení wslogin v I6) |
-| `X-SpcStoItemBrother` | ✓ | ✓ | Speciální feed pro Venim |
-| `X-SPresentTree_SK` | ✓ | ✓ | Hierarchický prezentační strom (SK) |
-| `X-StiIcecat` | ✓ | ✓ | Icecat dealer URL |
-| `X-StiImgChng` | ✓ | ✓ | Produkty – datum poslední změny obrázku |
-| `X-StoItemBase_SK` | ✓ | ✓ | Základní info o produktech (SK) |
-| `X-StoItemBaseNoteBR` | ✓ | ✓ | Základní info s tagem BR v poznámce |
-| `X-StoItemBaseReal` | ✓ | ✓ | Základní info o produktech |
-| `X-StoItemBaseWithoutPriceStock` | ✓ | ✓ | Základní info bez cen a skladu |
-| `X-StoItemEAN` | ✓ | ✓ | EAN kódy produktů |
-| `X-StoItemEnhance` | ✓ | ✓ | Rozšířené informace o produktech |
-| `X-StoItemGPSR` | ✓ | ✓ | GPSR informace produktu (nová verze) |
-| `X-StoItemKBProgres` | ✓ | ✓ | Upravený StoItemBase pro speciální zákazníky |
-| `X-StoItemNameDesc` | ✓ | ✓ | Informace o produktech (kód, název, poznámka) |
-| `X-StoItemOriBlocked` | ✓ | ✓ | Produkty blokované na objednávkách |
-| `X-StoItemPriceEU` | ✓ | ✓ | Koncové ceny (End User) |
-| `X-StoItemPriceOrd` | ✓ | ✓ | Nákupní ceny s PartNo a EAN (fixní ceny PriceList/Price0–6 jen na oprávnění) |
-| `X-StoItemPriceOrdCur` | ✓ | ✓ | Alternativní StoItemPriceOrdCur, ByFromTo změna dnes 5–21 |
-| `X-StoItemPriceOrdCZCEUR` | ✓ | ✓ | Nákupní ceny + cena v EUR |
-| `X-StoItemQtyFree` | ✓ | ✓ | Skladová dostupnost (kód + PartNo, EAN) |
-| `X-StoItemQtyFreeBOHPT` | ✓ | ✓ | Dostupnost + blokované objednávky + naskladnění |
-| `X-StoItemQtyFreeReal` | ✓ | ✓ | Skladová dostupnost |
-| `X-StoItemQtyFreeRealX` | – | ✓ | Kombinované info produktu pro XML feed |
-| `X-StoItemQtyFreeRealX2` | – | ✓ | Kombinované info produktu pro XML feed |
-| `X-StoItemQtyFreeShip` | ✓ | ✓ | Dostupnost + naskladnění |
-| `X-StoItemQtyFreeWES` | ✓ | ✓ | Dostupnost na vlastním i externím skladu |
-| `X-StoItemQtyFreeWithQtyOriBlock` | ✓ | ✓ | Dostupnost + blokované objednávky |
-| `X-StoItemQtyFreeWithQtyOriBlockEx` | ✓ | ✓ | Dostupnost + blokované objednávky + naskladnění |
-| `X-StoItemSiv` | ✓ | ✓ | TESTOVACÍ verze – export pro I6 modul StoItemCom |
-| `X-StoItemThin` | ✓ | ✓ | Zkrácené info (název, PN, cena, sklad) |
-| `X-StoItemWarType` | ✓ | ✓ | Typ rozšířené záruky |
-| `X-StoItemXXLDelivModePrc` | ✓ | ✓ | Cena způsobu dopravy pro XXL produkty |
-| `X-XiaomiSNSale` | ✓ | ✓ | Sériová čísla prodaných produktů Xiaomi |
+| `AttCpsSti` | ✓ | ✓ | Export příloh parametrů StoItemů |
+| `AttSti` | ✓ | ✓ | Export příloh StoItemů |
+| `X-AttSti` | ✓ | ✓ | Speciální export příloh StoItemů (SWS w_x) |
+| `X-ConetAttSti` | ✓ | ✓ | Speciální export příloh StoItemů (SWS w_x, Conet) |
+
+### Firma
+
+| ResultType | _El | _Schema | Popis |
+|---|:--:|:--:|---|
+| `ComBank` | ✓ | ✓ | Bankovní účty klienta |
+| `ComShipTo` | ✓ | ✓ | Adresy doručení (ShipTo) |
 | `ZCompany` | ✓ | ✓ | Export B2C uživatelů |
 | `ZShop` | ✓ | ✓ | Nastavení ZShop |
+| `X-EntecCompany` | ✓ | ✓ | Firmy z Entec DB |
+| `X-EntecContact` | ✓ | ✓ | Kontakty z Entec DB |
+
+### Doklady
+
+| ResultType | _El | _Schema | Popis |
+|---|:--:|:--:|---|
+| `DocTrDel` | – | ✓ | Document Transfer – Delivery |
+| `DocTrExp` | ✓ | ✓ | Document Transfer – Expedice (import do I6) |
+| `DocTrInv` | – | ✓ | Document Transfer – Faktura (import do I6) |
+| `DocTrLoa` | – | ✓ | Document Transfer – Půjčka |
+| `ConetDocTrInv` | – | ✓ | Document Transfer – Faktura přes Conet |
+| `X-DocTrDel` | – | ✓ | Document Transfer – Delivery (cena s poplatkem) |
+| `X-IniPrevDay` | ✓ | ✓ | Fakturované položky předchozí den |
+
+### Objednávky
+
+| ResultType | _El | _Schema | Popis |
+|---|:--:|:--:|---|
+| `Order` | – | ✓ | Export objednávek s položkami, ShipTo a B2C; bez param = všechny otevřené |
+| `OrderDelivMode` | ✓ | ✓ | Seznam způsobů doručení pro `Order.asmx/Create` |
+| `OrderPaymentMode` | ✓ | ✓ | Seznam způsobů platby pro `Order.asmx/Create` |
+| `OrderQueue` | ✓ | ✓ | Seznam front pro `Order.asmx/Create/@QudId` |
+| `OrderToken` | ✓ | ✓ | Info o tokenu objednávky |
+| `ConetPriceOrd` | ✓ | ✓ | Cena objednávky přes Conet |
+| `X-OpenOrdItemWithQueDateShip` | ✓ | ✓ | Otevřené položky objednávek s odhadovaným datem expedice |
+| `X-OrdTrack` | ✓ | ✓ | URL trackování zásilky pro kód objednávky |
+
+### Produkty – základ
+
+| ResultType | _El | _Schema | Popis |
+|---|:--:|:--:|---|
+| `StoItemBase` | ✓ | ✓ | Základní info o produktech |
+| `StoItemActive` | ✓ | ✓ | Seznam aktivních produktů |
+| `StoItemEAN` | ✓ | ✓ | EAN kódy produktů |
+| `StoItemEPREL` | ✓ | ✓ | EPREL info produktů |
+| `StoItemGPSR` | – | – | GPSR informace produktů |
+| `StoItemHook` | ✓ | ✓ | Napojené produkty (hooked) |
+| `StoItemList` | ✓ | ✓ | Seznam StoItemů dle podmínek v `Code` (`{StrId}XXX` / `{ScaId}XXX` / `{CpaId}XXX`) |
+| `StoItemNode` | ✓ | ✓ | Reference StoItem – TreeNode |
+| `StoItemSiv` | ✓ | ✓ | Export pro I6 modul StoItemCom |
+| `StiPacking` | ✓ | ✓ | Balení StoItemů |
+| `StiRelation` | ✓ | ✓ | Relace StoItemů |
+| `StiRelationCO` | ✓ | ✓ | Relace – podmíněné nabídky StoItemů |
+| `StrStiSync` | ✓ | ✓ | Synchronizace SPresentTree + StoItem; `Code` = Id SPresentTree |
+
+### Produkty – ceny
+
+| ResultType | _El | _Schema | Popis |
+|---|:--:|:--:|---|
+| `StoItemPriceEU` | ✓ | ✓ | Ceny pro koncového uživatele (End User) |
+| `StoItemPriceOrd` | ✓ | ✓ | Objednávkové ceny |
+| `StoItemPriceOrdCur` | ✓ | ✓ | Objednávkové ceny v měně uživatele |
+| `X-StoItemPriceEU` | ✓ | ✓ | Export cen pro koncového uživatele |
+| `X-StoItemPriceOrd` | ✓ | ✓ | Objednávkové ceny s PartNo a EAN (PriceList, Price0–6 na spec. oprávnění) |
+| `X-StoItemPriceOrdCur` | ✓ | ✓ | Alternativní StoItemPriceOrdCur, ByFromTo změna dnes 5–21 |
+| `X-StoItemPriceOrdCZCEUR` | ✓ | ✓ | Objednávkové ceny + cena v EUR (PriceList, Price0–6 na spec. oprávnění) |
+| `X-SipPrcZMin` | ✓ | ✓ | Minimální prodejní cena |
+| `X-ConetSipPrcZMin` | ✓ | ✓ | Minimální prodejní cena (Conet) |
+| `X-RatePL` | ✓ | ✓ | Kurz použitý v ceníku |
+
+### Produkty – sklad
+
+| ResultType | _El | _Schema | Popis |
+|---|:--:|:--:|---|
+| `StoItemQtyFree` | ✓ | ✓ | Produkty na skladě |
+| `StoItemQtyFreeBO` | ✓ | ✓ | Produkty na skladě + blokované |
+| `StoItemQtyFreeEx` | ✓ | ✓ | Produkty na skladě s dostupností a příštím dodáním |
+| `StoItemQtyFreeExQud` | ✓ | ✓ | Sklad s dostupností a dodáním (podle `QudId`) |
+| `StoItemQtyFreeExQudT` | ✓ | ✓ | Sklad s dostupností a dodáním (součet přes všechny sklady uživatele) |
+| `X-StoItemQtyFree` | ✓ | ✓ | Produkty na skladě (Code + PartNo, EAN) |
+| `X-StoItemQtyFreeBOHPT` | ✓ | ✓ | Sklad + blokované objednávky + příští dodání |
+| `X-StoItemQtyFreeReal` | ✓ | ✓ | Produkty na skladě (real) |
+| `X-StoItemQtyFreeRealX` | – | ✓ | Kombinované info pro XML feed |
+| `X-StoItemQtyFreeRealX2` | – | ✓ | Kombinované info pro XML feed (v2) |
+| `X-StoItemQtyFreeShip` | ✓ | ✓ | Sklad s dostupností a příštím dodáním |
+| `X-StoItemQtyFreeWES` | ✓ | ✓ | Produkty na vlastním i externím skladě |
+| `X-StoItemQtyFreeWithQtyOriBlock` | ✓ | ✓ | Sklad + blokované objednávky |
+| `X-StoItemQtyFreeWithQtyOriBlockEx` | ✓ | ✓ | Sklad + blokované objednávky + příští dodání |
+| `X-ConetStoItemQtyFreeEx` | ✓ | ✓ | Sklad s dostupností a dodáním (Conet) |
+
+### Produkty – feedy
+
+| ResultType | _El | _Schema | Popis |
+|---|:--:|:--:|---|
+| `StoItemShop` | ✓ (jen `_El`) | – | Základní info – shop feed |
+| `StoItemShoptet` | ✓ (jen `_El`) | – | Základní info – Shoptet feed |
+| `X-ShopBaseCZC` | ✓ | ✓ | Základní info – CZC data feed |
+| `X-StoItemBase_SK` | ✓ | ✓ | Základní info (SK verze) |
+| `X-StoItemBaseNoteBR` | ✓ | ✓ | Základní info s BR tagem v poznámce |
+| `X-StoItemBaseReal` | ✓ | ✓ | Základní info (real varianta) |
+| `X-StoItemBaseWithoutPriceStock` | ✓ | ✓ | Základní info bez cen a stavu skladu |
+| `X-StoItemEAN` | ✓ | ✓ | EAN kódy produktů |
+| `X-StoItemEnhance` | ✓ | ✓ | Rozšířené info o produktech |
+| `X-StoItemGPSR` | ✓ | ✓ | GPSR informace (nová verze) |
+| `X-StoItemNameDesc` | ✓ | ✓ | Code, název, popis produktu |
+| `X-StoItemThin` | ✓ | ✓ | Tenký feed – název, PN, cena, sklad |
+| `X-StoItemWarType` | ✓ | ✓ | Info o typech záruky |
+| `X-StoItemXXLDelivModePrc` | ✓ | ✓ | Cena způsobu doručení pro XXL produkty |
+| `X-StoItemSiv` | ✓ | ✓ | TEST verze exportu pro I6 modul StoItemCom |
+| `X-StoItemKBProgres` | ✓ | ✓ | Upravený StoItemBase pro speciální zákazníky |
+| `X-StoItemOriBlocked` | ✓ | ✓ | Produkty blokované na objednávkách |
+
+### Parametry
+
+| ResultType | _El | _Schema | Popis |
+|---|:--:|:--:|---|
+| `CpsSti` | – | ✓ | Export parametrů StoItemů vč. definic |
+| `CpsStiVal` | ✓ | ✓ | Parametry StoItemů – Název × Hodnota (filtr dle Code StoItem) |
+| `X-ConetCpsSti` | – | ✓ | Export parametrů StoItemů vč. definic (Conet) |
+
+### Katalog
+
+| ResultType | _El | _Schema | Popis |
+|---|:--:|:--:|---|
+| `SPresentTree` | ✓ | ✓ | Hierarchická stromová struktura; `IdP` = rodič (prázdný = top level); Sort 3 znaky/úroveň |
+| `SPresentTreeType` | ✓ | ✓ | Typ SPresentTree (export celého typu stromu) |
+| `SCategorySys` | ✓ | ✓ | Katalog systémových kategorií |
+| `X-SPresentTree_SK` | ✓ | ✓ | Hierarchická stromová struktura (SK verze) |
+| `Queue` | ✓ | ✓ | Dodací lhůta (delivery term) |
+
+### Ostatní
+
+| ResultType | _El | _Schema | Popis |
+|---|:--:|:--:|---|
+| `Config` | ✓ | ✓ | Data konfigurátoru |
+| `Reclaim` | – | – | Detail reklamací (`GetResult` / `GetResultByCode`) |
+| `Service` | – | – | Detail servisních případů (`GetResult` / `GetResultByCode`) |
+| `X-GetLicKey` | ✓ | ✓ | Licenční klíč pro Order Id |
+| `X-GetToken` | ✓ | ✓ | MS ESD token pro Order Id |
+| `X-DeletedStiCode` | ✓ | ✓ | Smazané StiCode (možné nové použití) |
+
+### Speciální
+
+Dedikované exporty pro konkrétní partnery nebo systémy.
+
+| ResultType | _El | _Schema | Popis |
+|---|:--:|:--:|---|
+| `X-Diskont` | – | ✓ | Speciální export pro Diskontní nákupy (vč. StiRelation, ImgGal, SPresentTree) |
+| `X-Cybex` | ✓ | ✓ | Speciální export pro Cybex |
+| `X-HPTRON` | ✓ | ✓ | Speciální export pro HP Tronic |
+| `X-SpcStoItemBase` | ✓ | ✓ | Konfigurovatelný feed StoItemBase (nastavení přes I6 wslogin) |
+| `X-SpcStoItemBrother` | ✓ | ✓ | Speciální feed pro Venim |
+| `X-StiIcecat` | ✓ | ✓ | Export Icecat dealer URL |
+| `X-StiImgChng` | ✓ | ✓ | Produkty – datum poslední změny obrázku |
+| `X-XiaomiSNSale` | ✓ | ✓ | SN prodaných produktů Xiaomi |
 
 ---
 
