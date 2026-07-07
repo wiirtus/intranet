@@ -691,8 +691,9 @@ determines which field is filtered on (no prefix = main code `StiCode`):
 > all of them are returned. The prefix is given once at the start and applies to the whole batch.
 
 
-```xml
 ##### Example:
+
+```xml
 <?xml version="1.0" encoding="utf-8"?>
 <Result>
     <StoItem Id="685699" Code="ASC00511" PartNo="GU605CX-QR149" PartNo2="90NR0M65-M007X0" EAN="4711636262347" PriceOrd="81144.2200" PriceEU="90900.8300" PriceRef="11.3400" PriceRef2="33.0000" TaxRate="21.0000" />
