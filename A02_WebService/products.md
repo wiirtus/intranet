@@ -1,7 +1,5 @@
-
 > **⚠️ Verze dokumentu 0.5**  
 > Dokument není dokončen, jedná se o pracovní verzi. Místa označená `‹…›` a **TODO** je třeba doplnit reálnými hodnotami (URL, přihlašovací údaje, ukázky odpovědí). Předpoklady jsou v textu výslovně označeny.
-
 
 ---
 
@@ -10,8 +8,6 @@
 > **Účel dokumentu:** Kompletní popis SWS/I6 (CyberSoft) WebServisu pro účely předání a integrace
 > pod ALSO. Dokument popisuje architekturu, autentizaci, formát požadavků
 > a odpovědí, konvence pojmenování a úplný katalog dostupných exportů.
->
-
 
 ---
 
@@ -21,6 +17,8 @@
 - [2. Base URL](#2-base-url)
 - [3. Formát požadavku](#3-formát-požadavku)
   - [3.1 Čtení dat – Default.asmx](#31-čtení-dat--defaultasmx)
+  - [3.2 Autentizace](#32-autentizace)
+  - [3.3 Zápis dat – Order.asmx](#33-zápis-dat--orderasmx)
 - [4. Srovnání s ALSO Product API](#4-srovnání-s-also-product-api)
 - [5. Katalog exportů](#5-katalog-exportů)
   - [5.1 Nejpoužívanější exporty](#51-nejpoužívanější-exporty)
@@ -47,27 +45,16 @@ Service je postaven jako **ASP.NET Web Service (`.asmx`)** a je provozován jako
 `/i6ws/` na eShopu distributora. Se službou lze komunikovat pomocí protokolu **SOAP**, u metod s jednoduchými parametry
 (exporty) také pomocí **HTTP GET/POST** – exporty lze tedy stahovat obyčejným odkazem (URL).
 
-
 ## 2. Base URL
 
 Webová služba je provozována jako aplikační adresář `/i6ws/` na eShopu distributora:
 
-CZ:
-
-```
-https://terminal.sws.cz/i6ws/
-```
-```
-https://www.sws.cz/i6ws/
-```
-SK:
-
-```
-https://www.swsi.sk/i6ws/
-```
-```
-https://www.alsotechnology.sk/i6ws/
-```
+| Země | Base URL                              |
+|------|---------------------------------------|
+| CZ   | `https://terminal.sws.cz/i6ws/`       |
+| CZ   | `https://www.sws.cz/i6ws/`            |
+| SK   | `https://www.swsi.sk/i6ws/`           |
+| SK   | `https://www.alsotechnology.sk/i6ws/` |
 
 **Hlavní endpointy:**
 
@@ -78,7 +65,6 @@ https://www.alsotechnology.sk/i6ws/
 | `ResultTypeInfo.ashx`   | Přehled všech dostupných exportů s popisem a schématy                                        |
 
 ---
-
 
 ## 3. Formát požadavku
 
@@ -96,7 +82,7 @@ GET https://JMENO:HESLO@HOST/i6ws/Default.asmx/GetResultByFromTo?resultType=‹R
 |---------------------|----------------------------------------------------------------------------------------------------|----------------------------|
 | `GetResult`         | Vrátí kompletní export (všechny produkty, vše skladem apod.)              | `resultType`               |
 | `GetResultByCode`   | Filtruje export podle kódu – vrátí jeden záznam pro daný produkt                                           | `resultType`, `code`       |
-| `GetResultByFromTo` | Filtruje export podle datumu od/do – typicky dle evidované změny záznamu                           | `resultType`, `from`, `to` |
+| `GetResultByFromTo` | Filtruje export podle data od/do – typicky dle evidované změny záznamu                           | `resultType`, `from`, `to` |
 
 **Parametry:**
 
@@ -112,10 +98,26 @@ GET https://JMENO:HESLO@HOST/i6ws/Default.asmx/GetResultByFromTo?resultType=‹R
 > GetResultByCode?resultType=StoItemQtyFree&code={PartNo}600623
 > ```
 
+### 3.2 Autentizace
 
+Přístup je vázán na **účet partnera** (stejné přihlašovací údaje jako do eShopu distributora) a
+používá **HTTP Basic authentication**. Přihlášení lze předat dvěma způsoby:
 
+- **HTTP hlavičkou** `Authorization: Basic ‹base64(jméno:heslo)›` — doporučeno pro integrace,
+- **přímo v URL** — `https://JMENO:HESLO@HOST/i6ws/…` (viz příklady v sekci 3.1); vhodné pro rychlé
+  otestování v prohlížeči či skriptu.
 
+Oprávnění účtu zároveň určuje **rozsah vracených dat** — viditelnost produktů, cenové hladiny
+(`PriceFullIs`, viz `StoItemPriceOrd`) i omezení dokladů na vlastní firmu (viz `DocTrInv`).
 
+> **TODO:** doplnit postup zřízení přístupu a testovací přihlašovací údaje `‹…›`.
+
+### 3.3 Zápis dat – `Order.asmx`
+
+Zakládání objednávek probíhá přes endpoint `Order.asmx` (metoda `Create`). Popis je mimo rozsah
+tohoto dokumentu — viz samostatný dokument [orders.md](orders.md).
+
+---
 
 ## 4. Srovnání s ALSO Product API
 
@@ -123,11 +125,11 @@ ALSO Product API nabízí 7 metod. Níže je uvedeno, které SWS exporty pokrýv
 
 | # | ALSO Product API metoda | Popis (ALSO)                                              | Odpovídající SWS export(y)                                      | Poznámka                                                              |
 |---|-------------------------|-----------------------------------------------------------|-----------------------------------------------------------------|-----------------------------------------------------------------------|
-| 1 | `AllProducts`           | Základní info o všech produktech dostupných v e-shopu     | `StoItemBase`                                  | SWS vrací ceny, sklad i obrázky (only `Id` with URL) v jednom exportu.                     |
-| 2 | `AllOfflineProducts`    | Produkty v katalogu partnera, které nejsou online         |            |  |
+| 1 | `AllProducts`           | Základní info o všech produktech dostupných v e-shopu     | `StoItemBase`                                  | SWS vrací ceny, sklad i obrázky (pouze `Id`, URL se skládá z `UrlBase*`) v jednom exportu. |
+| 2 | `AllOfflineProducts`    | Produkty v katalogu partnera, které nejsou online         | —                                                               | **TODO** — bez přímého ekvivalentu `‹ověřit›`                         |
 | 3 | `ProductFullInfo`       | Kompletní detail produktu – popis, atributy, obrázky, ceny | `StoItemBase` + `CpsSti`/`CpsStiVal` + `AttSti`               | SWS vyžaduje kombinaci více exportů pro stejný výsledek               |
-| 4 | `ProductNow`            | Aktuální sklad, cena a dostupnost pro jeden produkt       | `StoItemSiv` nebo dostupnost a cena zvlášt `StoItemQtyFree`, `StoItemPriceOrdCur`                        | Volání přes `GetResultByCode` s kódem produktu                        |
-| 5 | `AllProductsNow`        | Sklad, cena a dostupnost pro všechny produkty             | `StoItemSiv` nebo dostupnost a cena zvlášt `StoItemQtyFree`, `StoItemPriceOrdCur`                           | Volání přes `GetResult` pro všechny produkty                 |
+| 4 | `ProductNow`            | Aktuální sklad, cena a dostupnost pro jeden produkt       | `StoItemSiv`, nebo dostupnost a cena zvlášť: `StoItemQtyFree` + `StoItemPriceOrdCur`                        | Volání přes `GetResultByCode` s kódem produktu                        |
+| 5 | `AllProductsNow`        | Sklad, cena a dostupnost pro všechny produkty             | `StoItemSiv`, nebo dostupnost a cena zvlášť: `StoItemQtyFree` + `StoItemPriceOrdCur`                           | Volání přes `GetResult` pro všechny produkty                 |
 | 6 | `ProductImages`         | Dostupné obrázky produktu                                 |`StoItemBase` nebo  `AttSti`                                            | SWS vrací URL sestavené z `UrlBase*` + `Id`; typy rozlišeny tagem    |
 | 7 | `Categories`            | Kompletní hierarchie kategorií e-shopu                    | `SPresentTree`, `SCategorySys`                                  | SWS používá plochý seznam s ID rodiče a sort klíčem (3 znaky/úroveň) |
 
@@ -145,7 +147,7 @@ Každý export existuje ve třech variantách — liší se pouze suffixem v `re
 
 **Příklad — stejná data, tři varianty (`StoItemQtyFree`):**
 
-https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=ASC00511&resultType=StoItemQtyFree
+`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=ASC00511&resultType=StoItemQtyFree`
 
 ```xml
 <!-- Atributy (výchozí) -->
@@ -155,7 +157,7 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=ASC00511&resultTy
 </Result>
 ```
 
-https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=ASC00511&resultType=StoItemQtyFree_El
+`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=ASC00511&resultType=StoItemQtyFree_El`
 
 ```xml
 <!-- Elementy (_El) -->
@@ -167,15 +169,13 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=ASC00511&resultTy
         <PartNo>GU605CX-QR149</PartNo>
         <PartNo2>90NR0M65-M007X0</PartNo2>
         <EAN>4711636262347</EAN>
-        <EAN2>
-    </EAN2>
+        <EAN2></EAN2>
         <QtyFree>2</QtyFree>
     </StoItem>
 </Result>
 ```
 
-https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=ASC00511&resultType=StoItemQtyFree_Schema
-
+`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=ASC00511&resultType=StoItemQtyFree_Schema`
 
 ```xml
 <!-- Schéma (_Schema) — definice všech polí a jejich datových typů -->
@@ -211,27 +211,28 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=ASC00511&resultTy
 
 ### 5.1 Nejpoužívanější exporty
 
-| # | ResultType            | Počet  firem                      | Popis                                                    |
-|---|-----------------------|---------------------------------------|----------------------------------------------------------|
-| 1 | `StoItemBase`         | 130   | Kompletní katalog produktů          |
-| 2 | `StoItemQtyFree`      | 104          | Aktuální volné množství na skladě                        |
-| 3 | `StoItemSiv`          | 57   | Nákupní cena a stav skladem                                  |
-| 4 | `SPresentTree`        | 56               | Hierarchický strom kategorií produktů                    |
-| 5 | `DocTrInv`    | 51        | Faktury         |
-| 6 | `StoItemPriceOrd`           | 36               | Nakupni cena              |
-| 7 | `CpsStiVal`              | 27                      | Atributy produktů včetně definic parametrů               |
-| 8 | `StiRelation`              | 19            |    Vazby mezi produkty (příslušenství, alternativy)                   |
-| 9 | `StoItemBase_El`         | 18                       | Výstup jako xml element.  Kompletní katalog produktů    |
-| 10| `AttSti`            | 16   | Přílohy produktů (obrázky, dokumenty) faktur                                            |
-| 11| `CpsSti`            | 16  | Parametry produktů
-| 12| `StoItemQtyFree_El`            | 16   | Výstup jako xml element. Aktuální volné množství na skladě
-| 12| `StrStiSync`            | 12   | Synchronizace stromu produktů
-
+| #  | ResultType          | Počet firem | Popis                                                        |
+|----|---------------------|------------:|--------------------------------------------------------------|
+| 1  | `StoItemBase`       | 130         | Kompletní katalog produktů                                   |
+| 2  | `StoItemQtyFree`    | 104         | Aktuální volné množství na skladě                            |
+| 3  | `StoItemSiv`        | 57          | Nákupní cena a stav skladem                                  |
+| 4  | `SPresentTree`      | 56          | Hierarchický strom kategorií produktů                        |
+| 5  | `DocTrInv`          | 51          | Faktury                                                      |
+| 6  | `StoItemPriceOrd`   | 36          | Nákupní cena                                                 |
+| 7  | `CpsStiVal`         | 27          | Atributy produktů včetně definic parametrů                   |
+| 8  | `StiRelation`       | 19          | Vazby mezi produkty (příslušenství, alternativy)             |
+| 9  | `StoItemBase_El`    | 18          | Kompletní katalog produktů — výstup jako XML elementy        |
+| 10 | `AttSti`            | 16          | Přílohy produktů (obrázky, dokumenty)                        |
+| 11 | `CpsSti`            | 16          | Parametry produktů                                           |
+| 12 | `StoItemQtyFree_El` | 16          | Aktuální volné množství na skladě — výstup jako XML elementy |
+| 13 | `StrStiSync`        | 12          | Synchronizace stromu produktů                                |
 
 ---
 
-
 ### 5.2 Příklady nejpoužívanějších exportů
+
+> **Legenda typů** (platí pro všechny tabulky polí níže): `i2`/`i4`/`i8` = celé číslo (16/32/64 bit) · `ui1` = byte (0–255) ·
+> `fixed.14.4` / `number` / `money` = desetinné číslo · `string` = text · `boolean` = 0/1.
 
 #### 5.2.1 StoItemBase
 
@@ -241,10 +242,9 @@ skladovou dostupnost, logistické údaje i informace o obrázcích. Odpovídá m
 
 **`resultType`:** `StoItemBase` · `StoItemBase_El` · `StoItemBase_Schema`
 
+##### Příklad:
 
-#### Příklad:
-
-https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?resultType=StoItemBase&code=TCL00117
+`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?resultType=StoItemBase&code=TCL00117`
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -277,12 +277,6 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?resultType=StoItemBase
     </StoItem>
 </Result>
 ```
-
-
-
-
-**Legenda typů:** `i2`/`i4`/`i8` = celé číslo (16/32/64 bit) · `ui1` = byte (0–255) ·
-`fixed.14.4` / `number` = desetinné číslo · `string` = text · `boolean` = 0/1.
 
 ##### Atributy elementu `Result` (obálka, jednou na dokument)
 
@@ -371,7 +365,6 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?resultType=StoItemBase
 | `Sort`  | i2   | Pořadí zobrazení                                              |
 | `Size`  | i8   | Velikost obrázku (B)                                          |
 
-
 #### 5.2.2 StoItemQtyFree
 
 Vrací pouze identifikaci produktu
@@ -382,12 +375,8 @@ dat než `StoItemBase`). Odpovídá metodě `AllProductsNow` / `ProductNow` z AL
 
 ##### Příklad:
 
-```xml
-<?xml version="1.0" encoding="utf-8"?>
-<Result>
-    <StoItem Id="685699" Code="ASC00511" PartNo="GU605CX-QR149" PartNo2="90NR0M65-M007X0" EAN="4711636262347" EAN2="" QtyFree="2" />
-</Result>
-```
+Viz úvod sekce [Katalog exportů](#5-katalog-exportů) — `StoItemQtyFree` je tam použit
+jako ukázka všech tří variant výstupu (atributy, `_El`, `_Schema`) včetně URL volání.
 
 ##### Atributy elementu `StoItem`
 
@@ -402,10 +391,6 @@ dat než `StoItemBase`). Odpovídá metodě `AllProductsNow` / `ProductNow` z AL
 | `EAN2`      | string  | Druhý EAN                                                   |
 | `QtyFreeIs` | boolean | Příznak         |
 | `QtyFree`   | i4      | Volné (dostupné) množství skladem                          |
-
-**Příklad volání a odpovědi** — viz sekce [Katalog exportů](#5-katalog-exportů) výše
-(`StoItemQtyFree` je použit jako ukázka všech tří variant).
-
 
 #### 5.2.3 StoItemSiv
 
@@ -468,8 +453,6 @@ dostupnost i cenu jedním exportem.
 | `XXL`           | boolean     | Nadrozměrné zboží                                              |
 | `XXS`           | boolean     | `‹ověřit›`                                                      |
 
-
-
 #### 5.2.4 SPresentTree
 
 Export prezentačního (kategorického) stromu. Vrací **plochý seznam uzlů** stromu, kde se
@@ -482,7 +465,7 @@ Díky `FOR XML AUTO` je struktura **dvouúrovňová**: uzel `SPresentTree` obsah
 elementů `StoItem` — tj. produkty zařazené přímo do daného uzlu. Kategorie bez produktů, které
 zároveň nemají pod sebou žádný produkt (na žádné podúrovni), jsou z výstupu odstraněny.
 
-
+**`resultType`:** `SPresentTree` · `SPresentTree_El` · `SPresentTree_Schema`
 
 **Filtrování přes `GetResultByCode`:** parametr `code` = `IdP` (ID uzlu) — vrátí danou podvětev
 stromu. Záporné `code` filtruje podle *typu stromu*.
@@ -540,9 +523,7 @@ stromu. Záporné `code` filtruje podle *typu stromu*.
 > filtry viditelnosti pro WebService (skladová/prodejní příznaky produktu, řádková oprávnění
 > partnera). Množina produktů se tedy může u různých partnerů lišit podle jejich oprávnění.
 
-
 #### 5.2.5 DocTrInv
-
 
 Přenosový formát faktury — **„Document Transfer – Invoice"**, dle definice exportu určený
 pro **import do jiné instance I6** (mezisystémová výměna dokladů). Vrací kompletní fakturu
@@ -562,9 +543,22 @@ Result
     └── Order       (objednávka + koncový zákazník dropshipmentu – 0..N)
 ```
 
+**`resultType`:** `DocTrInv` · `DocTrInv_El` · `DocTrInv_Schema`
+
+##### Filtrování a rozsah
+
+| Volání                | Chování                                                                                  |
+|-----------------------|-------------------------------------------------------------------------------------------|
+| `GetResultByCode`     | `code` = číslo faktury (`InvCode`, např. `CRDC120009`)                                    |
+| `GetResultByFromTo`   | `from`/`to` filtruje dle data pořízení faktury (`InvC`) i dle posledního potvrzeného DL (`DelDateConf`) |
+| `GetResult` (bez param.) | Vrací pouze faktury pořízené za **poslední ~1–2 dny** (`InvC >= dnes − 1`)             |
+
+> Export je vždy **omezen na firmu přihlášeného partnera** (`InvComId`) a vrací jen
+> **dokončené, neinterní** faktury (`InvState = 1`, `InvInt = 0`). Partner tak vidí jen své doklady.
+
 ##### Příklad:
 
-https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=FV26092791&resultType=DocTrInv
+`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=FV26092791&resultType=DocTrInv`
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -593,18 +587,6 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=FV26092791&result
     </Invoice>
 </Result>
 ```
-
-
-**Filtrování a rozsah:**
-
-| Volání                | Chování                                                                                  |
-|-----------------------|-------------------------------------------------------------------------------------------|
-| `GetResultByCode`     | `code` = číslo faktury (`InvCode`, např. `CRDC120009`)                                    |
-| `GetResultByFromTo`   | `from`/`to` filtruje dle data pořízení faktury (`InvC`) i dle posledního potvrzeného DL (`DelDateConf`) |
-| `GetResult` (bez param.) | Vrací pouze faktury pořízené za **poslední ~1–2 dny** (`InvC >= dnes − 1`)             |
-
-> Export je vždy **omezen na firmu přihlášeného partnera** (`InvComId`) a vrací jen
-> **dokončené, neinterní** faktury (`InvState = 1`, `InvInt = 0`). Partner tak vidí jen své doklady.
 
 ##### Element `Invoice` (hlavička faktury)
 
@@ -760,8 +742,6 @@ zákazníka** u přímého dropshipmentu (kam se zboží doručuje jménem partn
 | `ZCstPostCode` | string | PSČ                                                       |
 | `ZCstCouName`  | string | Země                                                     |
 
-
-
 #### 5.2.6 StoItemPriceOrd
 
 Cenový export — **objednací (nákupní) ceny** partnera. Vrací cenu pro objednání, referenční
@@ -770,8 +750,7 @@ Cenový export — **objednací (nákupní) ceny** partnera. Vrací cenu pro obj
 Pokrývá cenovou část metod `ProductNow` / `AllProductsNow` z ALSO Product API
 (dostupnost řeší `StoItemQtyFree`).
 
-
-
+**`resultType`:** `StoItemPriceOrd` · `StoItemPriceOrd_El` · `StoItemPriceOrd_Schema`
 
 ##### Filtrování přes `GetResultByCode` — prefixy `code`
 
@@ -839,7 +818,6 @@ Tento export podporuje **rozšířené vyhledávání** podle typu kódu. Prefix
 > **Pozn. pro ALSO:** Standardní partner dostává `PriceOrd`, `PriceRef*`, `TaxRate` a `PriceB2CMin`;
 > sada `PriceList`/`Price0–5` je nadstavba vázaná na zvláštní oprávnění.
 
-
 #### 5.2.7 CpsStiVal
 
 Export **parametrů (atributů) produktů** — technické specifikace ve formátu **název × hodnota**.
@@ -848,14 +826,14 @@ StoItem)."* Každý element odpovídá jednomu parametru jednoho produktu; produ
 vrátí N elementů. Spolu se `StoItemBase` pokrývá metodu `ProductFullInfo` z ALSO Product API
 (atributová část).
 
-
+**`resultType`:** `CpsStiVal` · `CpsStiVal_El` · `CpsStiVal_Schema`
 
 > **Doporučení k použití:** Export je primárně určen k **filtrování podle kódu produktu**
 > (`GetResultByCode`). Přes `GetResult` vrací parametry všech produktů — může jít o velký objem dat.
 
 ##### Příklad:
 
-https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultType=CpsStiVal
+`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultType=CpsStiVal`
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -889,7 +867,6 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultTy
 </Result>
 ```
 
-
 ##### Atributy elementu `Row` (jeden parametr produktu)
 
 | Pole         | Typ    | Popis                                                                          |
@@ -921,13 +898,11 @@ Každý element = jedna příloha; produkt
 s N přílohami vrátí N elementů. Pokrývá metodu `ProductImages` z ALSO Product API (a obecně
 i nemedia přílohy, pokud jsou u produktu evidovány).
 
-
+**`resultType`:** `AttSti` · `AttSti_El` · `AttSti_Schema`
 
 Podporuje stejnou sadu prefixů jako `StoItemPriceOrd` (viz [Formát požadavku](#3-formát-požadavku)):
 bez prefixu `StiCode`, dále `{StiId}`, `{PartNo}`, `{PartNo2}`, `{CodeEAN}`, `{ManName}`, `{CodeAll}`.
 Více hodnot lze oddělit tabulátorem (`\t`).
-
-
 
 ##### Sestavení URL přílohy
 
@@ -939,7 +914,7 @@ Pole `Url` je vráceno **hotové**, ale vzniká dvěma způsoby podle typu pří
 
 ##### Příklad:
 
-https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultType=AttSti
+`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultType=AttSti`
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
@@ -973,7 +948,6 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultTy
 </Result>
 ```
 
-
 ##### Atributy elementu `AttSti` (jedna příloha)
 
 | Pole         | Typ    | Popis                                                                       |
@@ -993,7 +967,6 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultTy
 | `Size`       | i8     | Velikost přílohy v bajtech (u externích může být prázdná)                    |
 | `Sort`       | i2     | Pořadí přílohy pro řazení (jen je-li nenulové)                               |
 
-
 #### 5.2.9 CpsSti
 
 Export **parametrů produktů včetně jejich definic** — normalizovaná (relační) varianta `CpsStiVal`.
@@ -1003,7 +976,7 @@ a číselník hodnot samostatně** a přiřazení k produktům na ně jen odkazu
 klient chce postavit vlastní parametrickou databázi (definice stáhne jednou, produkty referencují).
 Spolu se `StoItemBase` pokrývá atributovou část metody `ProductFullInfo` z ALSO Product API.
 
-
+**`resultType`:** `CpsSti` · `CpsSti_El` · `CpsSti_Schema`
 
 > ⚠️ **`CpsStiVal` vs. `CpsSti`:** Pokud ti stačí prostý seznam „produkt → parametr → hodnota",
 > použij **`CpsStiVal`** (jednodušší, plochý). `CpsSti` použij, jen když potřebuješ i **metadata
@@ -1025,11 +998,10 @@ Result
 
 ##### Příklad:
 
-https://terminal.sws.cz/i6ws/default.asmx/GetResult?resultType=CpsSti
-
+`https://terminal.sws.cz/i6ws/default.asmx/GetResult?resultType=CpsSti`
 
 ```xml
-?xml version="1.0" encoding="utf-8"?>
+<?xml version="1.0" encoding="utf-8"?>
 <Result>
     <ConPar>
         <Row Id="74" Type="0" Single="1" Code="Bch" Grp="NTB" Ord="1000" Name="TPM chip (NTB)" AddName="Funkce" />
@@ -1058,7 +1030,6 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResult?resultType=CpsSti
         <Row Id="203" CpaId="10022" CpvId="10145" />
         <Row Id="211" CpaId="10023" CpvId="10149" />
 
-
 ...
 <ConParSet>
         <Row Id="201505" StiId="44661" CpaId="10037" CpvId="10216" StiCode="501217" Value="Epson" />
@@ -1068,7 +1039,6 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResult?resultType=CpsSti
         <Row Id="201511" StiId="44661" CpaId="10048" CpvId="10250" StiCode="501217" Value="Ne" Measure="2.0000" />
         <Row Id="201513" StiId="44661" CpaId="10045" CpvId="10250" StiCode="501217" Value="Ne" Measure="2.0000" />
 ...
-
 
         <Row Id="5897" StrId="17940" CpaId="1208" StrSort="0008N9124" />
         <Row Id="5898" StrId="16514" CpaId="1208" StrSort="0008N96CO" />
@@ -1140,4 +1110,3 @@ Provázání na straně klienta: `ConParSet.CpaId` → `ConPar.Id`, `ConParSet.C
 | `StrId`   | i4     | ID uzlu prezentačního stromu (`SPresentTree.Id`)                            |
 | `CpaId`   | i4     | ID parametru (`ConPar.Id`)                                                  |
 | `StrSort` | string | Sort klíč uzlu (3 znaky/úroveň) — určuje, u které kategorie se parametr používá |
-
