@@ -241,6 +241,46 @@ skladovou dostupnost, logistické údaje i informace o obrázcích. Odpovídá m
 
 **`resultType`:** `StoItemBase` · `StoItemBase_El` · `StoItemBase_Schema`
 
+
+#### Příklad:
+
+https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?resultType=StoItemBase&code=TCL00117
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<Result UrlBase="https://terminal.sws.cz/default.asp?cls=stoitem&amp;stiid=" UrlBaseThumbnail="https://terminal.sws.cz/img.asp?attname=thumbnail&amp;attpedid=52&amp;attsrcid=" UrlBaseImg="https://terminal.sws.cz/img.asp?stiid=" UrlBaseEnlargement="https://terminal.sws.cz/img.asp?attname=enlargement&amp;attpedid=52&amp;attsrcid=" UrlBaseImgGalery="https://terminal.sws.cz/img.asp?attid=" CouCode="CZ" TaxRateLow="12" TaxRateHigh="21">
+    <StoItem Id="673242" Code="TCL00117" PartNo="65Q6C" PartNo2="5901292526665" EAN="5901292526665" Name="TCL 65Q6C SMART TV 65&quot; QLED/4K UHD/Mini LED/144Hz/4xHDMI/USB/LAN/GoogleTV" NameAdd="4100 PPI/Dolby Vision IQ/HDR10+/HDR10/HLG" NameE="TCL 65Q6C" ManName="TCL" CouCode="CN" UrlExt="https://www.tcl.com/cz/cs/" PriceEU="15467.1600" PriceDea="12638.0000" PriceOrd="12638.0000" PriceRef="215.1000" RefProName="ASEKOL" RefCode="2.03." PriceRef2="0.0000" RefProName2="Autorský fond CZ" RefCode2="9.99" WeightRef="17.20000" TaxRate="21.0000" CutCode="85287240" QtyFree="20" WarDur="744" WarDurEU="744" SNTrack="1" Weight="20.30000" XXL="1" ScaId="1487" ThumbnailIs="1" ThumbnailSize="2197" ImgIs="1" ImgSize="111285" NoteShort="Televize – Google TV, Mini LED, 165cm, 4K Ultra HD, 100/120 Hz (144 Hz – herní režim), HDR10+, Dolby Vision, lokální stmívání, antireflexní obraz, DVB-T2/S2/C, 4× HDMI, 1× USB, LAN, WiFi, Bluetooth, DLNA, Chromecast, Miracast, HbbTV 2.0.3, herní režim, hl" Note="Televize – Google TV, Mini LED, ...">
+        <ImgGal Id="53098456" Name="Image1" Tag="sys-gal-enl" Sort="1" Size="37866" />
+        <ImgGal Id="53098457" Name="Image1" Tag="sys-gal-enl" Sort="2" Size="54590" />
+        <ImgGal Id="53098458" Name="Image1" Tag="sys-gal-enl" Sort="3" Size="54279" />
+        <ImgGal Id="53098459" Name="Image1" Tag="sys-gal-enl" Sort="4" Size="31121" />
+        <ImgGal Id="53098460" Name="Image1" Tag="sys-gal-enl" Sort="5" Size="35862" />
+        <ImgGal Id="53098461" Name="Image1" Tag="sys-gal-enl" Sort="6" Size="43787" />
+        <ImgGal Id="53098462" Name="Image1" Tag="sys-gal-enl" Sort="7" Size="34645" />
+        <ImgGal Id="53098463" Name="Image1" Tag="sys-gal-enl" Sort="8" Size="50589" />
+        <ImgGal Id="53098464" Name="Image1" Tag="sys-gal-enl" Sort="9" Size="8323" />
+        <ImgGal Id="53098465" Name="Image1" Tag="sys-gal-enl" Sort="10" Size="8246" />
+        <ImgGal Id="53098466" Name="Image1" Tag="sys-gal-enl" Sort="11" Size="5792" />
+        <ImgGal Id="53098470" Name="Image1" Tag="sys-gal-enl" Sort="12" Size="39502" />
+        <ImgGal Id="53099139" Name="Image1" Tag="sys-gal-thu" Sort="1" Size="8767" />
+        <ImgGal Id="53099140" Name="Image1" Tag="sys-gal-thu" Sort="2" Size="26486" />
+        <ImgGal Id="53099141" Name="Image1" Tag="sys-gal-thu" Sort="3" Size="26191" />
+        <ImgGal Id="53099142" Name="Image1" Tag="sys-gal-thu" Sort="4" Size="6463" />
+        <ImgGal Id="53099143" Name="Image1" Tag="sys-gal-thu" Sort="5" Size="12486" />
+        <ImgGal Id="53099144" Name="Image1" Tag="sys-gal-thu" Sort="6" Size="14240" />
+        <ImgGal Id="53099145" Name="Image1" Tag="sys-gal-thu" Sort="7" Size="7019" />
+        <ImgGal Id="53099146" Name="Image1" Tag="sys-gal-thu" Sort="8" Size="9174" />
+        <ImgGal Id="53099147" Name="Image1" Tag="sys-gal-thu" Sort="9" Size="3782" />
+        <ImgGal Id="53099148" Name="Image1" Tag="sys-gal-thu" Sort="10" Size="4006" />
+        <ImgGal Id="53099149" Name="Image1" Tag="sys-gal-thu" Sort="11" Size="3555" />
+        <ImgGal Id="53099150" Name="Image1" Tag="sys-gal-thu" Sort="12" Size="15306" />
+    </StoItem>
+</Result>
+```
+
+
+
+
 **Legenda typů:** `i2`/`i4`/`i8` = celé číslo (16/32/64 bit) · `ui1` = byte (0–255) ·
 `fixed.14.4` / `number` = desetinné číslo · `string` = text · `boolean` = 0/1.
 
@@ -522,8 +562,38 @@ Result
     └── Order       (objednávka + koncový zákazník dropshipmentu – 0..N)
 ```
 
-**`resultType`:** `DocTrInv` (varianty `_El` / `_Schema` — `‹ověřit›`, u `FOR XML EXPLICIT`
-se konvence tří variant nemusí uplatnit stejně jako u ostatních exportů)
+##### Příklad:
+
+https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=FV26092791&resultType=DocTrInv
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<Result>
+    <Invoice Id="8272021" Code="FV26092791" CodeO="26092791" SymCon="0008" Tag="AUTO" OrdId="6936129" OrdCode="OP26106050" OrdCodeO="4500565843" OrdC="2026-07-01T11:18:00" Type="73" DateAcc="2026-07-01T00:00:00" DateDue="2026-09-29T00:00:00" CurCode="CZK" Val="44310.9300" ValCur="44310.9300" ValRnd="0.0000" ValRndCur="0.0000" ValPaid="0.0000" ValPaidCur="0.0000" C="2026-07-01T12:08:00">
+        <DocTaxSum Id="22299964" TaxRate="21.0000" Base="36620.6000" ValTax="7690.3300" BaseCur="36620.6000" ValTaxCur="7690.3300" />
+        <InvItem Id="45450960" StiId="514671" StiCode="777806" StiCode2="KABCT1K30" StiPartNo="CB-DP-HDMI-3" StiEAN="8594125009847" StiEAN2="" StiName="C-TECH Kabel DisplayPort/HDMI, 3m, černý" OrdId="6936129" OrdCode="OP26106050" OrdCodeO="4500565843" OriC="2026-07-01T11:18:00" Qty="3.000" TaxRate="21.0000" Prc="160.0000" PrcTax="33.6000" CurCode="CZK" PrcCur="160.0000" PrcTaxCur="33.6000" PrcRefCur="0.1000" RefCode="5-32-4" RefProCode="REM" PrcRefCur2="0.0000" RefCode2="9.99" RefProCode2="AFcz" />
+        <InvItem Id="45450961" StiId="674126" StiCode="GMB00027" StiPartNo="CC-DP-HDMI-6" StiPartNo2="8716309082082" StiEAN="8716309082082" StiEAN2="" StiName="GEMBIRD Kabel DisplayPort na HDMI, M/M, 1,8m" OrdId="6936129" OrdCode="OP26106050" OrdCodeO="4500565843" OriC="2026-07-01T11:18:00" Qty="10.000" TaxRate="21.0000" Prc="64.0000" PrcTax="13.4400" CurCode="CZK" PrcCur="64.0000" PrcTaxCur="13.4400" PrcRefCur="0.1000" RefCode="5.84.(P)" RefProCode="ASE" PrcRefCur2="0.0000" RefCode2="9.99" RefProCode2="AFcz" />
+        <InvItem Id="45450962" StiId="695888" StiCode="LNM01353" StiPartNo="40BF0100EU" StiPartNo2="40BF0100EU" StiEAN="0195892132486" StiEAN2="" StiName="Lenovo ThinkPad USB4 Dock 5000 - 65W - EU" OrdId="6936129" OrdCode="OP26106050" OrdCodeO="4500565843" OriC="2026-07-01T11:18:00" Qty="10.000" TaxRate="21.0000" Prc="3549.1700" PrcTax="745.3300" CurCode="CZK" PrcCur="3549.1700" PrcTaxCur="745.3300" PrcRefCur="0.7600" RefCode="5.55." RefProCode="ASE" PrcRefCur2="0.0000" RefCode2="9.99" RefProCode2="AFcz" />
+        <InvItem Id="45450963" StiId="81640" StiCode="RECFEE" StiEAN="" StiEAN2="" StiName="Recyklační příspěvek" Qty="1.000" TaxRate="21.0000" Prc="0.3000" PrcTax="0.0600" CurCode="CZK" PrcCur="0.3000" PrcTaxCur="0.0600" RefIs="1" />
+        <InvItem Id="45450964" StiId="176570" StiCode="RECFEEAS" StiEAN="" StiEAN2="" StiName="Recyklační příspěvek ASEKOL" Qty="1.000" TaxRate="21.0000" Prc="8.6000" PrcTax="1.8100" CurCode="CZK" PrcCur="8.6000" PrcTaxCur="1.8100" RefIs="1" />
+        <Warranty Id="97240435" Qty="10.000" StiId="674126" StiCode="GMB00027" Dur="744" />
+        <Warranty Id="97240445" Qty="1.000" SerialNo="SYEU0225E" StiId="695888" StiCode="LNM01353" Dur="1116" />
+        <Warranty Id="97240446" Qty="1.000" SerialNo="SYEU02291" StiId="695888" StiCode="LNM01353" Dur="1116" />
+        <Warranty Id="97240447" Qty="1.000" SerialNo="SYEU0222Y" StiId="695888" StiCode="LNM01353" Dur="1116" />
+        <Warranty Id="97240448" Qty="1.000" SerialNo="SYEU0221T" StiId="695888" StiCode="LNM01353" Dur="1116" />
+        <Warranty Id="97240449" Qty="1.000" SerialNo="SYEU0221X" StiId="695888" StiCode="LNM01353" Dur="1116" />
+        <Warranty Id="97240450" Qty="1.000" SerialNo="SYEU022FZ" StiId="695888" StiCode="LNM01353" Dur="1116" />
+        <Warranty Id="97240451" Qty="1.000" SerialNo="SYEU02236" StiId="695888" StiCode="LNM01353" Dur="1116" />
+        <Warranty Id="97240452" Qty="1.000" SerialNo="SYEU0223C" StiId="695888" StiCode="LNM01353" Dur="1116" />
+        <Warranty Id="97240453" Qty="1.000" SerialNo="SYEU022CA" StiId="695888" StiCode="LNM01353" Dur="1116" />
+        <Warranty Id="97240454" Qty="1.000" SerialNo="SYEU022BT" StiId="695888" StiCode="LNM01353" Dur="1116" />
+        <Warranty Id="97240566" Qty="3.000" StiId="514671" StiCode="777806" Dur="744" />
+        <Delivery Id="9794587" Code="DV26128360" OrdId="6936129" OrdCode="OP26106050" CstId="244945" CstName="HPTronic Zlín, spol. s r.o." CstNameAdd="OD Prior Zlín" CstNameAdd2="IT oddělení" CstStreet="náměstí Práce 2523" CstCity="Zlín" CstPostCode="76001" CstCouName="Česká republika" />
+        <Order Id="6936129" Code="OP26106050" CodeO="4500565843" C="2026-07-01T11:18:00" OrwName="Internetem" CstId="244945" CstName="HPTronic Zlín, spol. s r.o." CstNameAdd="OD Prior Zlín" CstNameAdd2="IT oddělení" CstStreet="náměstí Práce 2523" CstCity="Zlín" CstPostCode="76001" CstCouName="Česká republika" />
+    </Invoice>
+</Result>
+```
+
 
 **Filtrování a rozsah:**
 
@@ -783,6 +853,41 @@ vrátí N elementů. Spolu se `StoItemBase` pokrývá metodu `ProductFullInfo` z
 > **Doporučení k použití:** Export je primárně určen k **filtrování podle kódu produktu**
 > (`GetResultByCode`). Přes `GetResult` vrací parametry všech produktů — může jít o velký objem dat.
 
+##### Příklad:
+
+https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultType=CpsStiVal
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<Result>
+    <Row Id="21133925" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="79" Code="PUP" Grp="NTB" Name="Počet USB portů (NTB, TV)" NameAdd="Porty" Single="1" Ord="1000" Value="1" ValueAdd="1" Measure="1.0000" />
+    <Row Id="21133926" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="198" Code="Vyr" Grp="TVZ" Name="Výrobce (TV)" Single="1" Value="TCL" />
+    <Row Id="21133933" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="661" Code="VES" Grp="MON" Name="Podpora VESA (monitory, TV)" Single="1" Ord="200" Value="Ano" Measure="1.0000" />
+    <Row Id="21133934" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="730" Code="OST" Grp="TVZ" Name="Operační systém (TV)" Single="1" Value="Google TV" />
+    <Row Id="21133935" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="731" Code="OBR" Grp="TVZ" Name="Tvar obrazovky (TV)" Single="1" Value="Rovná" />
+    <Row Id="21133936" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="732" Code="TNR" Grp="TVZ" Name="Typ tuneru" Value="DVB-T2" />
+    <Row Id="21133937" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="732" Code="TNR" Grp="TVZ" Name="Typ tuneru" Value="DVB-S2" />
+    <Row Id="21133938" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="732" Code="TNR" Grp="TVZ" Name="Typ tuneru" Value="DVB-C" />
+    <Row Id="21133939" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="733" Code="DLN" Grp="TVZ" Name="Podpora DLNA (TV)" Single="1" Value="Ano" Measure="1.0000" />
+    <Row Id="21133940" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="734" Code="WIF" Grp="TVZ" Name="Wi-Fi (TV)" Single="1" Value="Ano" Measure="1.0000" />
+    <Row Id="21133941" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="735" Code="ETH" Grp="TVZ" Name="Ethernet LAN (TV)" Single="1" Value="Ano" Measure="1.0000" />
+    <Row Id="21133943" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="737" Code="TEU" Grp="TVZ" Name="Třída energetické účinnosti (TV)" Single="1" Value="F" />
+    <Row Id="21133944" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="738" Code="P3D" Grp="TVZ" Name="Podpora 3D (TV)" Single="1" Value="Ne" Measure="2.0000" />
+    <Row Id="21133945" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="739" Code="BVR" Grp="TVZ" Name="Barva rámečku (TV)" Single="1" Value="Šedá" />
+    <Row Id="21133946" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="741" Code="FRQ" Grp="TVZ" Name="Frekvence panelu (TV)" Single="1" Value="288 Hz" Measure="288.0000" />
+    <Row Id="21133947" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="742" Code="VRP" Grp="TVZ" Name="Výkon reproduktorů (TV)" Single="1" Value="2x10 W + 20W" />
+    <Row Id="21133948" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="743" Code="CIS" Grp="TVZ" Name="CI/CI+ slot (TV)" Single="1" Value="CI+" />
+    <Row Id="21133949" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="847" Code="RUH" Grp="TVZ" Name="Úhlopříčka (TV)" Single="1" Value="65&quot;" Measure="650.0000" />
+    <Row Id="21133950" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="1116" Code="AA2" Grp="TVZ" Name="Apple Airplay 2" Single="1" Value="Ano" Measure="1.0000" />
+    <Row Id="21133951" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="1117" Code="PHR" Grp="TVZ" Name="Podpora HDR" Value="Dolby Vision IQ" />
+    <Row Id="21133952" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="1118" Code="HFc" Grp="TVZ" Name="Herní funkce" Value="AMD FreeSync Premium Pro" />
+    <Row Id="21133953" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="1119" Code="TTV" Grp="TVZ" Name="Technologie (TV)" Single="1" Value="LED (Mini LED podsvícení)" />
+    <Row Id="21133954" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="1120" Code="RTV" Grp="TVZ" Name="Rozlišení (TV)" Single="1" Value="3840x2160 (UHD)" Measure="38402160.0000" />
+    <Row Id="21133955" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="1132" Code="HTV" Grp="TVZ" Name="Hotelový mód (TV)" Single="1" Value="Ne" Measure="2.0000" />
+    <Row Id="21133959" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="10184" Code="HDM" Grp="MON" Name="HDMI počet (monitory, TV)" Single="1" Ord="70" Value="4" Measure="4.0000" />
+    <Row Id="21625513" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" CpaId="1207" Code="GSR" Name="GPSR" Single="1" Value="TCL EUROPE SAS;15 rue Rouget de Lisle,Issy-les-Moulineaux,92130,France;CZsupport@tcl.com,+420 225 341 059" />
+</Result>
+```
 
 
 ##### Atributy elementu `Row` (jeden parametr produktu)
@@ -822,9 +927,7 @@ Podporuje stejnou sadu prefixů jako `StoItemPriceOrd` (viz [Formát požadavku]
 bez prefixu `StiCode`, dále `{StiId}`, `{PartNo}`, `{PartNo2}`, `{CodeEAN}`, `{ManName}`, `{CodeAll}`.
 Více hodnot lze oddělit tabulátorem (`\t`).
 
-```
-GetResultByCode?resultType=AttSti&code={ManName}DATAWAY
-```
+
 
 ##### Sestavení URL přílohy
 
@@ -833,6 +936,42 @@ Pole `Url` je vráceno **hotové**, ale vzniká dvěma způsoby podle typu pří
 - **Externí příloha** (`AttUrl` obsahuje `://`) → `Url` = přímo externí odkaz.
 - **Interní příloha** (soubor v i6) → `Url` = `UrlBaseImgGalery` + `Id`
   (tj. `…/img.asp?attid=‹Id›`). Klient tedy může použít `Url` přímo bez skládání.
+
+##### Příklad:
+
+https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultType=AttSti
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<Result>
+    <AttSti Id="53098456" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-enl" File="TCL_65_Q6C_1A.jpg" Url="https://terminal.sws.cz/img.asp?attid=53098456" Size="37866" Sort="1" />
+    <AttSti Id="53098457" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-enl" File="TCL_65_Q6C_2.jpg" Url="https://terminal.sws.cz/img.asp?attid=53098457" Size="54590" Sort="2" />
+    <AttSti Id="53098458" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-enl" File="TCL_65_Q6C_3.jpg" Url="https://terminal.sws.cz/img.asp?attid=53098458" Size="54279" Sort="3" />
+    <AttSti Id="53098459" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-enl" File="TCL_65_Q6C_5.jpg" Url="https://terminal.sws.cz/img.asp?attid=53098459" Size="31121" Sort="4" />
+    <AttSti Id="53098460" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-enl" File="TCL_65_Q6C_6.jpg" Url="https://terminal.sws.cz/img.asp?attid=53098460" Size="35862" Sort="5" />
+    <AttSti Id="53098461" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-enl" File="TCL_65_Q6C_7.jpg" Url="https://terminal.sws.cz/img.asp?attid=53098461" Size="43787" Sort="6" />
+    <AttSti Id="53098462" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-enl" File="TCL_65_Q6C_8.jpg" Url="https://terminal.sws.cz/img.asp?attid=53098462" Size="34645" Sort="7" />
+    <AttSti Id="53098463" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-enl" File="TCL_65_Q6C_9.jpg" Url="https://terminal.sws.cz/img.asp?attid=53098463" Size="50589" Sort="8" />
+    <AttSti Id="53098464" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-enl" File="TCL_65_Q6C_10.jpg" Url="https://terminal.sws.cz/img.asp?attid=53098464" Size="8323" Sort="9" />
+    <AttSti Id="53098465" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-enl" File="TCL_65_Q6C_11.jpg" Url="https://terminal.sws.cz/img.asp?attid=53098465" Size="8246" Sort="10" />
+    <AttSti Id="53098466" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-enl" File="TCL_65_Q6C_12.jpg" Url="https://terminal.sws.cz/img.asp?attid=53098466" Size="5792" Sort="11" />
+    <AttSti Id="53098470" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-enl" File="TCL_65_Q6C_4.jpg" Url="https://terminal.sws.cz/img.asp?attid=53098470" Size="39502" Sort="12" />
+    <AttSti Id="53099123" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Thumbnail" Tag="sys-thu" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099123" Size="2197" />
+    <AttSti Id="53099139" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-thu" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099139" Size="8767" Sort="1" />
+    <AttSti Id="53099140" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-thu" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099140" Size="26486" Sort="2" />
+    <AttSti Id="53099141" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-thu" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099141" Size="26191" Sort="3" />
+    <AttSti Id="53099142" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-thu" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099142" Size="6463" Sort="4" />
+    <AttSti Id="53099143" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-thu" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099143" Size="12486" Sort="5" />
+    <AttSti Id="53099144" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-thu" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099144" Size="14240" Sort="6" />
+    <AttSti Id="53099145" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-thu" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099145" Size="7019" Sort="7" />
+    <AttSti Id="53099146" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-thu" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099146" Size="9174" Sort="8" />
+    <AttSti Id="53099147" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-thu" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099147" Size="3782" Sort="9" />
+    <AttSti Id="53099148" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-thu" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099148" Size="4006" Sort="10" />
+    <AttSti Id="53099149" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-thu" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099149" Size="3555" Sort="11" />
+    <AttSti Id="53099150" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Name="Image1" Tag="sys-gal-thu" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099150" Size="15306" Sort="12" />
+    <AttSti Id="53099166" StiId="673242" StiCode="TCL00117" StiPartNo="65Q6C" StiPartNo2="5901292526665" StiEAN="5901292526665" StiEAN2="" Tag="sys-thu-big" File="TCL00117.jpg" Url="https://terminal.sws.cz/img.asp?attid=53099166" Size="20461" />
+</Result>
+```
 
 
 ##### Atributy elementu `AttSti` (jedna příloha)
@@ -882,6 +1021,63 @@ Result
 ├── ConParRange   → Row (přípustné hodnoty parametru) [úroveň 9]
 ├── ConParSet     → Row (přiřazení hodnot produktům)  [úroveň 10]
 └── ConParStr     → Row (vazba parametrů na kategorie)[úroveň 11]
+```
+
+##### Příklad:
+
+https://terminal.sws.cz/i6ws/default.asmx/GetResult?resultType=CpsSti
+
+
+```xml
+?xml version="1.0" encoding="utf-8"?>
+<Result>
+    <ConPar>
+        <Row Id="74" Type="0" Single="1" Code="Bch" Grp="NTB" Ord="1000" Name="TPM chip (NTB)" AddName="Funkce" />
+        <Row Id="75" Type="0" Single="1" Code="Sop" Grp="NTB" Ord="1000" Name="Snímač otisku prstu (NTB)" AddName="Funkce" />
+        <Row Id="76" Type="0" Single="1" Code="THD" Grp="NTB" Ord="60" Name="Typ disku (NTB)" AddName="Disk" />
+        <Row Id="77" Type="0" Single="1" Code="Pza" Grp="NTB" Ord="1000" Name="Polohovací zařízení (NTB)" />
+        <Row Id="79" Type="0" Single="1" Code="PUP" Grp="NTB" Ord="1000" Name="Počet USB portů (NTB, TV)" AddName="Porty" />
+        <Row Id="81" Type="0" Single="1" Code="ReP" Grp="NTB" Ord="80" Name="Replikátor portů (NTB)" AddName="Porty" />
+        <Row Id="82" Type="0" Single="1" Code="Opm" Grp="NTB" Ord="1000" Name="Optická mechanika (NTB)" AddName="Funkce" />
+        <Row Id="94" Type="0" Single="1" Code="Pis" Grp="MED" Ord="0" Name="Přepisovatelné (média)" />
+        <Row Id="98" Type="0" Single="1" Code="Tec" Grp="MED" Ord="0" Name="Technologie (média)" />
+        <Row Id="99" Type="0" Single="1" Code="Pri" Grp="NSt" Ord="0" Name="Připojení (NAS Storage)" />
+        <Row Id="102" Type="0" Single="1" Code="Sto" Grp="NSt" Ord="0" Name="Možnost rozšíření (NAS Storage)" />
+...
+<ConParValue>
+        <Row Id="291" Measure="0.0000" Code="THD" Value="SSD" />
+        <Row Id="293" Measure="0.0000" Code="Pza" Value="Touchpad" />
+        <Row Id="295" Measure="0.0000" Code="Pza" Value="Touchpad+trackpoint" />
+        <Row Id="296" Measure="0.0000" Value="DVD±RW" />
+        <Row Id="297" Measure="0.0000" Value="Blu-ray" />
+
+...
+<ConParRange>
+        <Row Id="191" CpaId="10018" CpvId="10116" />
+        <Row Id="196" CpaId="10018" CpvId="10710" />
+        <Row Id="203" CpaId="10022" CpvId="10145" />
+        <Row Id="211" CpaId="10023" CpvId="10149" />
+
+
+...
+<ConParSet>
+        <Row Id="201505" StiId="44661" CpaId="10037" CpvId="10216" StiCode="501217" Value="Epson" />
+        <Row Id="201506" StiId="44661" CpaId="10040" CpvId="10251" StiCode="501217" Value="Jehličková" />
+        <Row Id="201507" StiId="44661" CpaId="10043" CpvId="10247" StiCode="501217" Value="A4" Measure="2.0000" />
+        <Row Id="201509" StiId="44661" CpaId="10047" CpvId="10250" StiCode="501217" Value="Ne" Measure="2.0000" />
+        <Row Id="201511" StiId="44661" CpaId="10048" CpvId="10250" StiCode="501217" Value="Ne" Measure="2.0000" />
+        <Row Id="201513" StiId="44661" CpaId="10045" CpvId="10250" StiCode="501217" Value="Ne" Measure="2.0000" />
+...
+
+
+        <Row Id="5897" StrId="17940" CpaId="1208" StrSort="0008N9124" />
+        <Row Id="5898" StrId="16514" CpaId="1208" StrSort="0008N96CO" />
+        <Row Id="5899" StrId="49" CpaId="1208" StrSort="0008N9AL4" />
+        <Row Id="5906" StrId="17940" CpaId="1214" StrSort="0008N9124" />
+        <Row Id="5907" StrId="16514" CpaId="1214" StrSort="0008N96CO" />
+        <Row Id="5908" StrId="49" CpaId="1214" StrSort="0008N9AL4" />
+    </ConParStr>
+</Result>
 ```
 
 Provázání na straně klienta: `ConParSet.CpaId` → `ConPar.Id`, `ConParSet.CpvId` →
@@ -945,10 +1141,3 @@ Provázání na straně klienta: `ConParSet.CpaId` → `ConPar.Id`, `ConParSet.C
 | `CpaId`   | i4     | ID parametru (`ConPar.Id`)                                                  |
 | `StrSort` | string | Sort klíč uzlu (3 znaky/úroveň) — určuje, u které kategorie se parametr používá |
 
-##### Poznámky
-
-- Vrací se pouze **publikované** parametry pro web (`CpaPublishWS`/`CpaPublish = 1`, `CpaHide = 0`)
-  s neprázdnou hodnotou; typy parametru `CpaType IN (0, 2)`.
-- Množina produktů (`ConParSet`) respektuje **řádková oprávnění** partnera — jiný partner může
-  vidět jiné produkty.
-- `ConParStr` (vazba na kategorie) vrací jen uzly z **viditelných** větví prezentačního stromu.
