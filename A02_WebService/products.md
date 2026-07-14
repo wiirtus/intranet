@@ -32,7 +32,7 @@
     - [5.2.7 CpsStiVal](#527-cpsstival)
     - [5.2.8 AttSti](#528-attsti)
     - [5.2.9 CpsSti](#529-cpssti)
-
+- [6. Speciální exporty](#6-special-export)
 ---
 
 ## 1. Přehled
@@ -64,6 +64,9 @@ Webová služba je provozována jako aplikační adresář `/i6ws/` na eShopu di
 | `Order.asmx`            | Zakládání a správa objednávek – metoda `Create`                                               |
 | `ResultTypeInfo.ashx`   | Přehled všech dostupných exportů s popisem a schématy                                        |
 
+
+
+
 ---
 
 ## 3. Formát požadavku
@@ -83,6 +86,25 @@ GET https://JMENO:HESLO@HOST/i6ws/Default.asmx/GetResultByFromTo?resultType=‹R
 | `GetResult`         | Vrátí kompletní export (všechny produkty, vše skladem apod.)              | `resultType`               |
 | `GetResultByCode`   | Filtruje export podle kódu – vrátí jeden záznam pro daný produkt                                           | `resultType`, `code`       |
 | `GetResultByFromTo` | Filtruje export podle data od/do – typicky dle evidované změny záznamu                           | `resultType`, `from`, `to` |
+
+
+
+##### Statistika použití GetResultByFromTo za posledních 30 dní
+
+| CodePrefix | Requests | Used by companies |
+|------------|----------|--------------------|
+| DocTrInv     | 11909     | 18                  | Faktura 
+| Order    | 8629      | 2                  | Objednávka
+| DocTrExp    | 1398      | 3                  |
+| DocTrDel    | 643      | 3                  | Dodací list
+| StoItemBase    | 243      | 6                  |  Detailní popis produktu. Nechápu proč u toho to používají asi chyba. 
+| X-Cybex    | 175      | 1                  | **TODO**
+| CpsStiVal    | 58      | 3                  | Parametry produktů
+
+
+GetResultByFromTo je používáno pro stahování dokumentů za určité období. 
+
+
 
 **Parametry:**
 
@@ -767,8 +789,31 @@ Tento export podporuje **rozšířené vyhledávání** podle typu kódu. Prefix
 | `{ManName}`  | Název výrobce (kategorie typu `MAN`)                     | `code={ManName}ASUS`             |
 | `{CodeAll}`  | Libovolný evidovaný kód produktu (`StoItemCode`)          | `code={CodeAll}...`              |
 
+
+##### Statistika použití za posledních 30 dní
+
+| CodePrefix | Requests | Used by companies |
+|------------|----------|--------------------|
+| PartNo     | 1104     | 2                  |
+| ManName    | 120      | 1                  |
+
+
+
 > **Hromadný dotaz:** Do `code` lze vložit **více hodnot oddělených tabulátorem** (`\t`) —
 > vrátí se záznamy pro všechny. Prefix se uvede jednou na začátku a platí pro celou dávku.
+
+
+##### Statistika použití za posledních 30 dní
+
+| `\t` | Requests | Used by companies |
+|------------|----------|--------------------|
+|  `\t`    | 22053     | 14                  |
+
+
+
+
+
+
 
 ##### Příklad:
 
@@ -1110,3 +1155,42 @@ Provázání na straně klienta: `ConParSet.CpaId` → `ConPar.Id`, `ConParSet.C
 | `StrId`   | i4     | ID uzlu prezentačního stromu (`SPresentTree.Id`)                            |
 | `CpaId`   | i4     | ID parametru (`ConPar.Id`)                                                  |
 | `StrSort` | string | Sort klíč uzlu (3 znaky/úroveň) — určuje, u které kategorie se parametr používá |
+
+## 6. Speciální exporty
+
+### 6.1 Alza - export X-StoItemQtyFreeRealX
+
+##### Příklad:
+ukázka pro jeden produkt TCL00117
+
+https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultType=X-StoItemQtyFreeRealX
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<items>
+    <item>
+        <Pricing>
+            <PriceWithFee>11607.6000</PriceWithFee>
+            <PriceWithoutFee>11392.5000</PriceWithoutFee>
+            <RecycleFee>215.1000</RecycleFee>
+            <CopyrightFee>0.0000</CopyrightFee>
+            <Currency>CZK</Currency>
+        </Pricing>
+        <Storage>
+            <StoredQuantity>565</StoredQuantity>
+        </Storage>
+        <Product>
+            <Name>TCL 65Q6C SMART TV 65" QLED/4K UHD/Mini LED/144Hz/4xHDMI/USB/LAN/GoogleTV</Name>
+            <DealerCode>TCL00117</DealerCode>
+            <PartNumber>65Q6C</PartNumber>
+            <Ean>5901292526665</Ean>
+        </Product>
+    </item>
+</items>
+```
+
+#####  Požadavoný formát od Alza:
+
+
+
+### 6.2 HP Tronik
