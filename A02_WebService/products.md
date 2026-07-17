@@ -1,11 +1,6 @@
-> **⚠️ Verze dokumentu 0.5**  
-> Dokument není dokončen, jedná se o pracovní verzi. Místa označená `‹…›` a **TODO** je třeba doplnit reálnými hodnotami (URL, přihlašovací údaje, ukázky odpovědí). Předpoklady jsou v textu výslovně označeny.
-
----
-
 # WebService – Product API
 
-> **Účel dokumentu:** Kompletní popis SWS/I6 (CyberSoft) WebServisu pro účely předání a integrace
+> **Účel dokumentu:** Popis SWS/I6 (CyberSoft) WebServisu pro účely předání a integrace
 > pod ALSO. Dokument popisuje architekturu, autentizaci, formát požadavků
 > a odpovědí, konvence pojmenování a úplný katalog dostupných exportů.
 
@@ -33,6 +28,7 @@
     - [5.2.8 AttSti](#528-attsti)
     - [5.2.9 CpsSti](#529-cpssti)
 - [6. Speciální exporty](#6-special-export)
+- [7. Odkaz na OneDrive se všemy materiály](#7-onedrive)
 ---
 
 ## 1. Přehled
@@ -44,6 +40,9 @@ stromy (kategorie), doklady (faktury, dodací listy) a objednávky.
 Service je postaven jako **ASP.NET Web Service (`.asmx`)** a je provozován jako aplikační adresář
 `/i6ws/` na eShopu distributora. Se službou lze komunikovat pomocí protokolu **SOAP**, u metod s jednoduchými parametry
 (exporty) také pomocí **HTTP GET/POST** – exporty lze tedy stahovat obyčejným odkazem (URL).
+
+
+
 
 ## 2. Base URL
 
@@ -91,18 +90,18 @@ GET https://JMENO:HESLO@HOST/i6ws/Default.asmx/GetResultByFromTo?resultType=‹R
 
 ##### Statistika použití GetResultByFromTo za posledních 30 dní
 
-| CodePrefix | Requests | Used by companies |
-|------------|----------|--------------------|
-| DocTrInv     | 11909     | 18                  | Faktura 
-| Order    | 8629      | 2                  | Objednávka
-| DocTrExp    | 1398      | 3                  |
-| DocTrDel    | 643      | 3                  | Dodací list
-| StoItemBase    | 243      | 6                  |  Detailní popis produktu. Nechápu proč u toho to používají asi chyba. 
-| X-Cybex    | 175      | 1                  | **TODO**
-| CpsStiVal    | 58      | 3                  | Parametry produktů
+| CodePrefix   | Requests | Used by companies | Poznámka |
+|--------------|----------|--------------------|----------|
+| DocTrInv     | 11909    | 18                 | Document Transfer - Invoice (Format for import into I6). |
+| Order        | 8629     | 2                  | Export of Orders with Items include ShipTo and B2C informations. |
+| DocTrExp     | 1398     | 3                  | Document Transfer - Expedition (Format for import into I6). |
+| DocTrDel     | 643      | 3                  | Document Transfer - Delivery. |
+| StoItemBase  | 243      | 6                  | Detailní popis produktu. Nechápu proč u toho to používají, asi chyba. |
+| X-Cybex      | 175      | 1                  | Upravený StoItemBase. Nechápu proč u toho to používají, asi chyba. |
+| CpsStiVal    | 58       | 3                  | Parametry produktů. Tady taky není třeba používat, asi chyba. |
 
 
-GetResultByFromTo je používáno pro stahování dokumentů za určité období. 
+GetResultByFromTo je používáno pro stahování dokumentů za určité období z i6 do i6. Lepší statistika na OneDrive v souboru [websevice_statistics.xlsx](https://also-my.sharepoint.com/:f:/p/michal_jurca/IgCI5I3cmva2R5Xrp_RlleESAeO7Vzqr02bFcOZ-G_LWXb8?e=4uyzDY).
 
 
 
@@ -122,17 +121,13 @@ GetResultByFromTo je používáno pro stahování dokumentů za určité období
 
 ### 3.2 Autentizace
 
-Přístup je vázán na **účet partnera** (stejné přihlašovací údaje jako do eShopu distributora) a
+Přístup je vázán na **účet partnera** (stejné přihlašovací údaje jako do eShopu) a
 používá **HTTP Basic authentication**. Přihlášení lze předat dvěma způsoby:
 
 - **HTTP hlavičkou** `Authorization: Basic ‹base64(jméno:heslo)›` — doporučeno pro integrace,
 - **přímo v URL** — `https://JMENO:HESLO@HOST/i6ws/…` (viz příklady v sekci 3.1); vhodné pro rychlé
   otestování v prohlížeči či skriptu.
 
-Oprávnění účtu zároveň určuje **rozsah vracených dat** — viditelnost produktů, cenové hladiny
-(`PriceFullIs`, viz `StoItemPriceOrd`) i omezení dokladů na vlastní firmu (viz `DocTrInv`).
-
-> **TODO:** doplnit postup zřízení přístupu a testovací přihlašovací údaje `‹…›`.
 
 ### 3.3 Zápis dat – `Order.asmx`
 
@@ -175,7 +170,7 @@ Každý export existuje ve třech variantách — liší se pouze suffixem v `re
 <!-- Atributy (výchozí) -->
 <?xml version="1.0" encoding="utf-8"?>
 <Result>
-    <StoItem Id="685699" Code="ASC00511" PartNo="GU605CX-QR149" PartNo2="90NR0M65-M007X0" EAN="4711636262347" EAN2="" QtyFree="2" />
+    <StoItem Id="695888" Code="LNM01353" PartNo="40BF0100EU" PartNo2="40BF0100EU" EAN="0195892132486" EAN2="" QtyFree="51" />
 </Result>
 ```
 
@@ -186,13 +181,14 @@ Každý export existuje ve třech variantách — liší se pouze suffixem v `re
 <?xml version="1.0" encoding="utf-8"?>
 <Result>
     <StoItem>
-        <Id>685699</Id>
-        <Code>ASC00511</Code>
-        <PartNo>GU605CX-QR149</PartNo>
-        <PartNo2>90NR0M65-M007X0</PartNo2>
-        <EAN>4711636262347</EAN>
-        <EAN2></EAN2>
-        <QtyFree>2</QtyFree>
+        <Id>695888</Id>
+        <Code>LNM01353</Code>
+        <PartNo>40BF0100EU</PartNo>
+        <PartNo2>40BF0100EU</PartNo2>
+        <EAN>0195892132486</EAN>
+        <EAN2>
+    </EAN2>
+        <QtyFree>51</QtyFree>
     </StoItem>
 </Result>
 ```
@@ -239,15 +235,18 @@ Každý export existuje ve třech variantách — liší se pouze suffixem v `re
 | 2  | `StoItemQtyFree`    | 104         | Aktuální volné množství na skladě                            |
 | 3  | `StoItemSiv`        | 57          | Nákupní cena a stav skladem                                  |
 | 4  | `SPresentTree`      | 56          | Hierarchický strom kategorií produktů                        |
-| 5  | `DocTrInv`          | 51          | Faktury                                                      |
+| 5  | `DocTrInv`          | 51          | Document Transfer - Invoice (Format for import into I6).Faktury                                                      |
 | 6  | `StoItemPriceOrd`   | 36          | Nákupní cena                                                 |
-| 7  | `CpsStiVal`         | 27          | Atributy produktů včetně definic parametrů                   |
-| 8  | `StiRelation`       | 19          | Vazby mezi produkty (příslušenství, alternativy)             |
+| 7  | `CpsStiVal`         | 27          | Export parameters of StoItems - Name x Value only (filtered by Code of StoItem).                   |
+| 8  | `StiRelation`       | 19          | Vazby mezi produkty (příslušenství, alternativy). Export Relations of StoItems.             |
 | 9  | `StoItemBase_El`    | 18          | Kompletní katalog produktů — výstup jako XML elementy        |
 | 10 | `AttSti`            | 16          | Přílohy produktů (obrázky, dokumenty)                        |
-| 11 | `CpsSti`            | 16          | Parametry produktů                                           |
+| 11 | `CpsSti`            | 16          | Parametry produktů. Export parameters of StoItems include parameter's definition.                                           |
 | 12 | `StoItemQtyFree_El` | 16          | Aktuální volné množství na skladě — výstup jako XML elementy |
-| 13 | `StrStiSync`        | 12          | Synchronizace stromu produktů                                |
+| 13 | `StrStiSync`        | 12          | Synchronizace stromu produktů. Export for synchronisation of SPresentTree + StoItem. As code must be send id of SPresentTree.                                |
+
+
+Lepší statistika na OneDrive v souboru [websevice_statistics.xlsx](https://also-my.sharepoint.com/:f:/p/michal_jurca/IgCI5I3cmva2R5Xrp_RlleESAeO7Vzqr02bFcOZ-G_LWXb8?e=4uyzDY).
 
 ---
 
@@ -266,36 +265,13 @@ skladovou dostupnost, logistické údaje i informace o obrázcích. Odpovídá m
 
 ##### Příklad:
 
-`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?resultType=StoItemBase&code=TCL00117`
+`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?resultType=StoItemBase&code=LNM01353`
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <Result UrlBase="https://terminal.sws.cz/default.asp?cls=stoitem&amp;stiid=" UrlBaseThumbnail="https://terminal.sws.cz/img.asp?attname=thumbnail&amp;attpedid=52&amp;attsrcid=" UrlBaseImg="https://terminal.sws.cz/img.asp?stiid=" UrlBaseEnlargement="https://terminal.sws.cz/img.asp?attname=enlargement&amp;attpedid=52&amp;attsrcid=" UrlBaseImgGalery="https://terminal.sws.cz/img.asp?attid=" CouCode="CZ" TaxRateLow="12" TaxRateHigh="21">
-    <StoItem Id="673242" Code="TCL00117" PartNo="65Q6C" PartNo2="5901292526665" EAN="5901292526665" Name="TCL 65Q6C SMART TV 65&quot; QLED/4K UHD/Mini LED/144Hz/4xHDMI/USB/LAN/GoogleTV" NameAdd="4100 PPI/Dolby Vision IQ/HDR10+/HDR10/HLG" NameE="TCL 65Q6C" ManName="TCL" CouCode="CN" UrlExt="https://www.tcl.com/cz/cs/" PriceEU="15467.1600" PriceDea="12638.0000" PriceOrd="12638.0000" PriceRef="215.1000" RefProName="ASEKOL" RefCode="2.03." PriceRef2="0.0000" RefProName2="Autorský fond CZ" RefCode2="9.99" WeightRef="17.20000" TaxRate="21.0000" CutCode="85287240" QtyFree="20" WarDur="744" WarDurEU="744" SNTrack="1" Weight="20.30000" XXL="1" ScaId="1487" ThumbnailIs="1" ThumbnailSize="2197" ImgIs="1" ImgSize="111285" NoteShort="Televize – Google TV, Mini LED, 165cm, 4K Ultra HD, 100/120 Hz (144 Hz – herní režim), HDR10+, Dolby Vision, lokální stmívání, antireflexní obraz, DVB-T2/S2/C, 4× HDMI, 1× USB, LAN, WiFi, Bluetooth, DLNA, Chromecast, Miracast, HbbTV 2.0.3, herní režim, hl" Note="Televize – Google TV, Mini LED, ...">
-        <ImgGal Id="53098456" Name="Image1" Tag="sys-gal-enl" Sort="1" Size="37866" />
-        <ImgGal Id="53098457" Name="Image1" Tag="sys-gal-enl" Sort="2" Size="54590" />
-        <ImgGal Id="53098458" Name="Image1" Tag="sys-gal-enl" Sort="3" Size="54279" />
-        <ImgGal Id="53098459" Name="Image1" Tag="sys-gal-enl" Sort="4" Size="31121" />
-        <ImgGal Id="53098460" Name="Image1" Tag="sys-gal-enl" Sort="5" Size="35862" />
-        <ImgGal Id="53098461" Name="Image1" Tag="sys-gal-enl" Sort="6" Size="43787" />
-        <ImgGal Id="53098462" Name="Image1" Tag="sys-gal-enl" Sort="7" Size="34645" />
-        <ImgGal Id="53098463" Name="Image1" Tag="sys-gal-enl" Sort="8" Size="50589" />
-        <ImgGal Id="53098464" Name="Image1" Tag="sys-gal-enl" Sort="9" Size="8323" />
-        <ImgGal Id="53098465" Name="Image1" Tag="sys-gal-enl" Sort="10" Size="8246" />
-        <ImgGal Id="53098466" Name="Image1" Tag="sys-gal-enl" Sort="11" Size="5792" />
-        <ImgGal Id="53098470" Name="Image1" Tag="sys-gal-enl" Sort="12" Size="39502" />
-        <ImgGal Id="53099139" Name="Image1" Tag="sys-gal-thu" Sort="1" Size="8767" />
-        <ImgGal Id="53099140" Name="Image1" Tag="sys-gal-thu" Sort="2" Size="26486" />
-        <ImgGal Id="53099141" Name="Image1" Tag="sys-gal-thu" Sort="3" Size="26191" />
-        <ImgGal Id="53099142" Name="Image1" Tag="sys-gal-thu" Sort="4" Size="6463" />
-        <ImgGal Id="53099143" Name="Image1" Tag="sys-gal-thu" Sort="5" Size="12486" />
-        <ImgGal Id="53099144" Name="Image1" Tag="sys-gal-thu" Sort="6" Size="14240" />
-        <ImgGal Id="53099145" Name="Image1" Tag="sys-gal-thu" Sort="7" Size="7019" />
-        <ImgGal Id="53099146" Name="Image1" Tag="sys-gal-thu" Sort="8" Size="9174" />
-        <ImgGal Id="53099147" Name="Image1" Tag="sys-gal-thu" Sort="9" Size="3782" />
-        <ImgGal Id="53099148" Name="Image1" Tag="sys-gal-thu" Sort="10" Size="4006" />
-        <ImgGal Id="53099149" Name="Image1" Tag="sys-gal-thu" Sort="11" Size="3555" />
-        <ImgGal Id="53099150" Name="Image1" Tag="sys-gal-thu" Sort="12" Size="15306" />
+    <StoItem Id="695888" Code="LNM01353" PartNo="40BF0100EU" PartNo2="40BF0100EU" EAN="0195892132486" Name="Lenovo ThinkPad USB4 Dock 5000 - 65W - EU" NameE="Lenovo ThinkPad USB4 Dock 5000 - 65W - EU" ManName="Lenovo" CouCode="CN" UrlExt="https://psref.lenovo.com/accessory/40BF0100EU" PriceEU="4597.8200" PriceB2CMin="4597.8200" PriceDea="3539.2200" PriceOrd="3539.2200" PriceRef="0.7600" RefProName="ASEKOL" RefCode="5.55." PriceRef2="0.0000" RefProName2="Autorský fond CZ" RefCode2="9.99" WeightRef="0.54750" TaxRate="21.0000" CutCode="84718000" QtyFree="51" WarDur="1116" WarDurEU="1116" SNTrack="1" Weight="0.64000" ScaId="53" ThumbnailIs="1" ThumbnailSize="1322" ImgIs="1" ImgSize="14400" EnlargementIs="1" EnlargementSize="19826" SisName="Novinka" NoteShort="Popis produktu&#xD;&#xA;Dokovací stanice Lenovo™ ThinkPad® USB4 Dock 5000 je navržena pro zvýšení každodenní produktivity. Jedná se o nástupce oblíbené Universal USB-C Dock, vybavený nejmodernější technologií USB4. Dok lze k notebooku připojit pomocí USB4 s upstr" Note="Popis produktu&#xD;&#xA;Dokovací stanice Lenovo™ ThinkPad® USB4 Dock 5000 je navržena pro zvýšení každodenní produktivity. Jedná se o nástupce oblíbené Universal USB-C Dock, vybavený nejmodernější technologií USB4. Dok lze k notebooku připojit pomocí USB4 s upstream konektivitou o propustnosti 40 Gb/s, což umožňuje rozšířit konfiguraci monitorů o více pixelů a vyšší obnovovací frekvence.&#xD;&#xA;Dokovací stanice může dodávat 65 W napájení notebooku při použití 100W napájecího adaptéru, nebo lze použít 135W adaptér, který zvýší nabíjecí výkon až na 100 W pro notebook.&#xD;&#xA;&#xD;&#xA;Hlavní vlastnosti&#xD;&#xA;&#xD;&#xA;Dokovací stanice ThinkPad® USB4 Dock 5000 s nejnovější technologií USB4 nabízí až čtyřnásobný výkon konektivity oproti USB-C 3.2 Gen 2. Díky propustnosti až 40 Gb/s můžete připojit buď jeden monitor s ultravysokým rozlišením 8K při 60 Hz, nebo dva monitory 4K s obnovovací frekvencí 144 Hz. Snadno tak rozšíříte svůj notebook Lenovo na plnohodnotnou pracovní platformu s různými periferními zařízeními.&#xD;&#xA;Dok podporuje Power Delivery 3.1 a poskytuje až 100 W pro rychlé nabíjení notebooku, takže můžete jednoduše rozšířit možnosti svého pracovního prostoru.&#xD;&#xA;&#xD;&#xA;Dokovací stanice je navíc univerzálně kompatibilní s různými operačními systémy.">
+        <ImgGal />
     </StoItem>
 </Result>
 ```
@@ -333,24 +309,24 @@ skladovou dostupnost, logistické údaje i informace o obrázcích. Odpovídá m
 | `NameSeo`       | string      | SEO název (pro URL / vyhledávače)                                         |
 | `ManName`       | string      | Název výrobce (Manufacturer)                                             |
 | `CouCode`       | string      | Kód země původu                                                          |
-| `UrlExt`        | string      | Externí URL (např. stránka produktu u výrobce) `‹ověřit›`                 |
+| `UrlExt`        | string      | Externí URL (např. stránka produktu u výrobce)                  |
 | `PriceEU`       | fixed.14.4  |  MSRP, list price                           |
 | `PriceB2CMin`   | fixed.14.4  | Minimální B2C prodejní cena (MAP)                                        |
 | `PriceDea`      | fixed.14.4  | Dealerská cena                                                            |
 | `PriceOrd`      | fixed.14.4  | Objednací (nákupní) cena                                                  |
-| `PriceRef`      | fixed.14.4  | autorský poplatek |
-| `PriceRefInfo`  | fixed.14.4  | Informativní hodnota referenčního poplatku `‹ověřit›`                     |
+| `PriceRef`      | fixed.14.4  | recyklační poplatek |
+| `PriceRefInfo`  | fixed.14.4  | Informativní hodnota recyklačního poplatku                                |
 | `RefProName`    | string      | Název referenčního produktu `‹ověřit›`                                    |
 | `RefCode`       | string      | Kód referenčního produktu `‹ověřit›`                                      |
-| `PriceRef2`     | fixed.14.4  | recyklační poplatek `‹ověřit›`                             |
-| `PriceRef2Info` | fixed.14.4  | Informativní hodnota druhého ref. poplatku `‹ověřit›`                     |
+| `PriceRef2`     | fixed.14.4  |  autorský poplatek                             |
+| `PriceRef2Info` | fixed.14.4  | Informativní hodnota autorského poplatku                                  |
 | `RefProName2`   | string      | Název druhého referenčního produktu `‹ověřit›`                           |
 | `RefCode2`      | string      | Kód druhého referenčního produktu `‹ověřit›`                             |
 | `WeightRef`     | number      | Referenční hmotnost (pro výpočet poplatku?) `‹ověřit›`                    |
 | `MeasureRef2`   | number      | Referenční míra/množství `‹ověřit›`                                      |
 | `TaxRate`       | fixed.14.4  | Sazba DPH produktu (%)                                                    |
 | `TatCodeE`      | string      | `‹ověřit›`                                                                |
-| `CutCode`       | string      | `‹ověřit — celní sazebník / kód?›`                                        |
+| `CutCode`       | string      | celní sazebník                                         |
 | `QtyFreeIs`     | boolean     | Příznak, zda je dostupné množství evidováno/platné                       |
 | `QtyFree`       | i4          | Volné (dostupné) množství skladem                                        |
 | `QtyPack`       | number      | Množství v balení (karton)                                              |
@@ -360,7 +336,6 @@ skladovou dostupnost, logistické údaje i informace o obrázcích. Odpovídá m
 | `NonDivQty`     | number      | Nedělitelné (minimální odběrové) množství `‹ověřit›`                      |
 | `Weight`        | number      | Hmotnost (kg)                                                            |
 | `XXL`           | boolean     | Nadrozměrné zboží                                                        |
-| `XXS`           | boolean     | `‹ověřit›`                                                                |
 | `ScaId`         | i4          | `‹ověřit›`                                                                |
 | `ThumbnailIs`   | boolean     | Existuje náhled                                                          |
 | `ThumbnailSize` | i8          | Velikost náhledu (B)                                                     |
@@ -397,8 +372,12 @@ dat než `StoItemBase`). Odpovídá metodě `AllProductsNow` / `ProductNow` z AL
 
 ##### Příklad:
 
-Viz úvod sekce [Katalog exportů](#5-katalog-exportů) — `StoItemQtyFree` je tam použit
-jako ukázka všech tří variant výstupu (atributy, `_El`, `_Schema`) včetně URL volání.
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<Result>
+    <StoItem Id="695888" Code="LNM01353" PartNo="40BF0100EU" PartNo2="40BF0100EU" EAN="0195892132486" EAN2="" QtyFree="51" />
+</Result>
+```
 
 ##### Atributy elementu `StoItem`
 
@@ -429,7 +408,7 @@ dostupnost i cenu jedním exportem.
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <Result UrlBase="https://terminal.sws.cz/default.asp?cls=stoitem&amp;stiid=" UrlBaseImg="https://terminal.sws.cz/img.asp?stiid=">
-    <StoItem Id="230726" Code="578307" Code2="ZB0788" PartNo="A76/01B" EAN="8711500802521" EAN2="4895229106093" Name="Philips baterie knoflíková A76, alkalická - 1ks (LR44)" ManName="Philips" SiuCode="ks" UrlSuffix="230726" UrlExt="http://www.consumer.philips.com/c/zvlastni-baterie/alkalicke-a76_01b/prd/cz/" QtyFree="9" PriceEU="28.1000" PriceOrd="11.5000" PriceRef="0.0000" PriceRef2="0.0000" WarDur="744" ImgSize="16384" CutCode="85065030" Weight="0.00400" />
+    <StoItem Id="695888" Code="LNM01353" PartNo="40BF0100EU" PartNo2="40BF0100EU" EAN="0195892132486" Name="Lenovo ThinkPad USB4 Dock 5000 - 65W - EU" ManName="Lenovo" SisName="Novinka" SiuCode="ks" UrlSuffix="695888" UrlExt="https://psref.lenovo.com/accessory/40BF0100EU" QtyFree="51" PriceEU="4597.8200" PriceOrd="3539.2200" PriceRef="0.7600" PriceRef2="0.0000" WarDur="1116" ImgSize="14400" CutCode="84718000" Weight="0.64000" />
 </Result>
 ```
 
@@ -457,23 +436,22 @@ dostupnost i cenu jedním exportem.
 | `SisName`       | string      | `‹ověřit›`                                                      |
 | `SiuCode`       | string      | `‹ověřit — kód měrné jednotky (ks/bal.)?›`                      |
 | `UrlSuffix`     | string      | Přípona připojovaná k `UrlBase` (dokončení URL produktu) `‹ověřit›` |
-| `UrlExt`        | string      | Externí URL `‹ověřit›`                                          |
+| `UrlExt`        | string      | Odkaz na produkt u výrobce URL                                           |
 | `QtyFreeIs`     | boolean     | Příznak, zda je dostupné množství evidováno/platné              |
 | `QtyFree`       | i4          | Volné (dostupné) množství skladem                              |
-| `PriceEU`       | fixed.14.4  | `‹ověřit — koncová/doporučená cena (MSRP)?›`                    |
+| `PriceEU`       | fixed.14.4  |  MSRP                    |
 | `PriceOrd`      | fixed.14.4  | Objednací (nákupní) cena                                        |
-| `PriceRef`      | fixed.14.4  | Cena navázaného referenčního poplatku (recyklační/autorský?) `‹ověřit›` |
-| `PriceRefInfo`  | fixed.14.4  | Informativní hodnota referenčního poplatku `‹ověřit›`          |
-| `PriceRef2`     | fixed.14.4  | Cena druhého referenčního poplatku `‹ověřit›`                  |
-| `PriceRef2Info` | fixed.14.4  | Informativní hodnota druhého ref. poplatku `‹ověřit›`         |
+| `PriceRef`      | fixed.14.4  | Recyklační poplatek |
+| `PriceRefInfo`  | fixed.14.4  | Informativní hodnota recyklačního poplatku          |
+| `PriceRef2`     | fixed.14.4  | Autorský poplatek                  |
+| `PriceRef2Info` | fixed.14.4  | Informativní hodnota autorského poplatku         |
 | `WarDur`        | i4          | Délka záruky (měsíce)                                          |
 | `ImgSize`       | i8          | Velikost hlavního obrázku (B); 0 = obrázek není                |
 | `SitId`         | ui1         | `‹ověřit›`                                                      |
 | `NonMater`      | ui1         | Příznak nehmotného produktu (služba/licence/ESD)? `‹ověřit›`   |
-| `CutCode`       | string      | `‹ověřit — celní sazebník / kód?›`                             |
+| `CutCode`       | string      | celní sazebník                                         |
 | `Weight`        | number      | Hmotnost (kg)                                                  |
 | `XXL`           | boolean     | Nadrozměrné zboží                                              |
-| `XXS`           | boolean     | `‹ověřit›`                                                      |
 
 #### 5.2.4 SPresentTree
 
@@ -678,13 +656,13 @@ Result
 | `PrcRefCur`   | fixed.14.4  | Recyklační poplatek (měna faktury)                                 |
 | `RefCode`     | string      | Kód recyklačního poplatku                                          |
 | `RefProCode`  | string      | Kód produktu recyklačního poplatku                                 |
-| `PrcRefCur2`  | fixed.14.4  | Druhý recyklační poplatek (měna faktury)                          |
-| `RefCode2`    | string      | Kód druhého recyklačního poplatku                                 |
-| `RefProCode2` | string      | Kód produktu druhého poplatku                                     |
+| `PrcRefCur2`  | fixed.14.4  | Autorský poplatek (měna faktury)                          |
+| `RefCode2`    | string      | Kód autorského poplatku                                 |
+| `RefProCode2` | string      | Kód produktu autorského poplatku                                     |
 | `ZPrc`        | fixed.14.4  | Cena bez DPH pro koncového zákazníka (dropship)                   |
 | `ZPrcTax`     | fixed.14.4  | Cena s DPH pro koncového zákazníka                                |
 | `ZPrcRef`     | fixed.14.4  | Recyklační poplatek – dropship                                    |
-| `ZPrcRef2`    | fixed.14.4  | Druhý recyklační poplatek – dropship                              |
+| `ZPrcRef2`    | fixed.14.4  | Autorský poplatek – dropship                              |
 | `RefIs`       | boolean     | Příznak, že řádek **je** recyklační poplatek (nikoli produkt)     |
 
 ##### Element `Warranty` (sériová čísla / záruky, 0..N)
@@ -820,7 +798,7 @@ Tento export podporuje **rozšířené vyhledávání** podle typu kódu. Prefix
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
 <Result>
-    <StoItem Id="685699" Code="ASC00511" PartNo="GU605CX-QR149" PartNo2="90NR0M65-M007X0" EAN="4711636262347" PriceOrd="81144.2200" PriceEU="90900.8300" PriceRef="11.3400" PriceRef2="33.0000" TaxRate="21.0000" />
+    <StoItem Id="695888" Code="LNM01353" PartNo="40BF0100EU" PartNo2="40BF0100EU" EAN="0195892132486" PriceOrd="3539.2200" PriceEU="4597.8200" PriceRef="0.7600" PriceRef2="0.0000" TaxRate="21.0000" PriceB2CMin="4597.8200" />
 </Result>
 ```
 
@@ -839,8 +817,8 @@ Tento export podporuje **rozšířené vyhledávání** podle typu kódu. Prefix
 | `PriceEU`      | money  | Koncová/doporučená cena (přepočtená do měny partnera, je-li nastaveno) `‹ověřit význam – MSRP?›` |
 | `PriceRef`     | money  | Recyklační poplatek navázaný na produkt                                          |
 | `PriceRefInfo` | money  | Informativní hodnota recyklačního poplatku                                       |
-| `PriceRef2`    | money  | Druhý recyklační poplatek                                                        |
-| `PriceRef2Info`| money  | Informativní hodnota druhého poplatku                                            |
+| `PriceRef2`    | money  | Autorský poplatek                                                                |
+| `PriceRef2Info`| money  | Informativní hodnota autorského poplatku                                         |
 | `TaxRate`      | fixed.14.4 | Sazba DPH (%); u přeshraničního režimu přepočtena dle cílové země (`TaxMeCouId`) |
 | `PriceFullIs`  | boolean | Příznak, že partner má oprávnění vidět kompletní sadu fixních cen (`Price*`)     |
 | `PriceList`    | money  | Ceníková (fixní) cena — **jen se speciálním oprávněním**, jinak prázdné          |
@@ -1156,12 +1134,13 @@ Provázání na straně klienta: `ConParSet.CpaId` → `ConPar.Id`, `ConParSet.C
 | `CpaId`   | i4     | ID parametru (`ConPar.Id`)                                                  |
 | `StrSort` | string | Sort klíč uzlu (3 znaky/úroveň) — určuje, u které kategorie se parametr používá |
 
-## 6. Speciální exporty
+## 6. Speciální důležité exporty
 
 ### 6.1 Alza - export X-StoItemQtyFreeRealX
+Timeout na jejich straně na stažení dat je 5 minut. Export upraven podle jejich požadavku. Mají svůj formát, který  jenom přijímají.
 
 ##### Příklad:
-ukázka pro jeden produkt TCL00117
+ukázka pro jeden produkt 40BF0100EU
 
 https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultType=X-StoItemQtyFreeRealX
 
@@ -1170,20 +1149,20 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultTy
 <items>
     <item>
         <Pricing>
-            <PriceWithFee>11607.6000</PriceWithFee>
-            <PriceWithoutFee>11392.5000</PriceWithoutFee>
-            <RecycleFee>215.1000</RecycleFee>
+            <PriceWithFee>3557.7600</PriceWithFee>
+            <PriceWithoutFee>3557.0000</PriceWithoutFee>
+            <RecycleFee>0.7600</RecycleFee>
             <CopyrightFee>0.0000</CopyrightFee>
             <Currency>CZK</Currency>
         </Pricing>
         <Storage>
-            <StoredQuantity>565</StoredQuantity>
+            <StoredQuantity>51</StoredQuantity>
         </Storage>
         <Product>
-            <Name>TCL 65Q6C SMART TV 65" QLED/4K UHD/Mini LED/144Hz/4xHDMI/USB/LAN/GoogleTV</Name>
-            <DealerCode>TCL00117</DealerCode>
-            <PartNumber>65Q6C</PartNumber>
-            <Ean>5901292526665</Ean>
+            <Name>Lenovo ThinkPad USB4 Dock 5000 - 65W - EU</Name>
+            <DealerCode>LNM01353</DealerCode>
+            <PartNumber>40BF0100EU</PartNumber>
+            <Ean>0195892132486</Ean>
         </Product>
     </item>
 </items>
@@ -1191,6 +1170,42 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultTy
 
 #####  Požadavoný formát od Alza:
 
+| Field name | Description | Format |
+|---|---|---|
+| **Pricing** | | |
+| PriceWithFee | (one piece of the) product purchase price with fees | *number (with „." as a decimal point)* |
+| PriceWithoutFee¹⁾ | (one piece of the) product purchase price without fees | *number (with „." as a decimal point)* |
+| RecycleFee | recycleFee | *number* |
+| CopyrightFee | copyrightFee | *number* |
+| Currency | currency of the product | *ISO 4217 format (USD, CZK, EUR, HUF, ...)* |
+| **Storage** | | |
+| StoredQuantity²⁾ | number of the product pieces | *number* |
+| **Product** | | |
+| DealerCode | code of the dealer | *text* |
+| PartNumber | part number of the product | *text format* |
+| Ean | ean code of the product | *text format* |
+| Name | name of the product | *text* |
+
+### 6.2 HP Tronic - export  X-StoItemQtyFreeBOHPT
+HP Tronic cz vlastní firmu Nay sk a mají společný systém, ale data si každá firma stahuje zvlášť. HP Tronik dělá za obě firmy společné blokování produktů. Přes webservice chtějí vidět dobu naskladnění a počet kolik toho můžou objednat (free stock + blokované zboží). 
+
+##### Příklad:
+ukázka pro jeden produkt 40BF0100EU
+
+```xml
+<?xml version="1.0" encoding="utf-8"?>
+<Result>
+    <StoItem Code="LNM01353" PartNo="40BF0100EU" PartNo2="40BF0100EU" EAN="0195892132486" QtyFree="51" Avail="21" />
+</Result>
+```
+
+QtyFree - free stock + blokované zboží
+
+Avail - početní dní na naskladění 
 
 
-### 6.2 HP Tronik
+
+
+## 7. Odkaz na OneDrive se všemy materiály
+
+Zde jsou všechny materiály k webservice  [Link to Onedrive](https://also-my.sharepoint.com/:f:/p/michal_jurca/IgCI5I3cmva2R5Xrp_RlleESAeO7Vzqr02bFcOZ-G_LWXb8?e=4uyzDY).
