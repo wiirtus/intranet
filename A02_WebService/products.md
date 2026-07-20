@@ -27,8 +27,10 @@
     - [5.2.7 CpsStiVal](#527-cpsstival)
     - [5.2.8 AttSti](#528-attsti)
     - [5.2.9 CpsSti](#529-cpssti)
-- [6. Speciální exporty](#6-special-export)
-- [7. Odkaz na OneDrive se všemy materiály](#7-onedrive)
+- [6. Speciální důležité exporty](#6-speciální-důležité-exporty)
+  - [6.1 Alza - export X-StoItemQtyFreeRealX](#61-alza---export-x-stoitemqtyfreerealx)
+  - [6.2 HP Tronic - export X-StoItemQtyFreeBOHPT](#62-hp-tronic---export--x-stoitemqtyfreebohpt)
+- [7. Odkaz na OneDrive se všemy materiály](#7-odkaz-na-onedrive-se-všemy-materiály)
 ---
 
 ## 1. Přehled
@@ -118,6 +120,49 @@ GetResultByFromTo je používáno pro stahování dokumentů za určité období
 > ```
 > GetResultByCode?resultType=StoItemQtyFree&code={PartNo}600623
 > ```
+
+##### Filtrování přes `GetResultByCode` — prefixy `code`
+
+Tento export podporuje **rozšířené vyhledávání** podle typu kódu. Prefix na začátku parametru
+`code` určuje, podle jakého pole se filtruje (bez prefixu = hlavní kód `StiCode`):
+
+| Prefix       | Filtruje podle                                             | Příklad                          |
+|--------------|-----------------------------------------------------------|----------------------------------|
+| *(žádný)*    | Hlavní skladový kód (`StiCode`)                           | `code=LNM01353`                   |
+| `{StiId}`    | Interní ID produktu                                       | `code={StiId}695888`             |
+| `{PartNo}`   | Výrobní číslo                                             | `code={PartNo}40BF0100EU`     |
+| `{PartNo2}`  | Druhé výrobní číslo                                       | `code={PartNo2}40BF0100EU`  |
+| `{CodeEAN}`  | EAN                                                       | `code={CodeEAN}0195892132486`    |
+| `{ManName}`  | Název výrobce (kategorie typu `MAN`)                     | `code={ManName}Lenovo`             |
+| `{CodeAll}`  | Libovolný evidovaný kód produktu (`StoItemCode`)          | `code={CodeAll}...`              |
+
+
+
+
+##### Statistika použití za posledních 30 dní
+
+| ExportType   | CodePrefix | Requests | Used by companies |
+|--------------|------------|----------|--------------------|
+| StoItemBase  | PartNo     | 1273     | 2                  |
+| StoItemBase  | ManName    | 62       | 1                  |
+| StiRelation  | ManName    | 62       | 1                  |
+
+
+
+> **Hromadný dotaz:** Do `code` lze vložit **více hodnot oddělených tabulátorem** (`\t`) —
+> vrátí se záznamy pro všechny. Prefix se uvede jednou na začátku a platí pro celou dávku.
+
+
+##### Statistika použití hromadných dotazů (`\t`) za posledních 30 dní
+
+| ExportType      | Requests | Used by companies |
+|-----------------|----------|--------------------|
+| StoItemBase     | 20545    | 12                 |
+| StoItemSiv      | 761      | 1                  |
+| StoItemPriceOrd | 714      | 1                  |
+
+
+
 
 ### 3.2 Autentizace
 
@@ -752,44 +797,6 @@ Pokrývá cenovou část metod `ProductNow` / `AllProductsNow` z ALSO Product AP
 
 **`resultType`:** `StoItemPriceOrd` · `StoItemPriceOrd_El` · `StoItemPriceOrd_Schema`
 
-##### Filtrování přes `GetResultByCode` — prefixy `code`
-
-Tento export podporuje **rozšířené vyhledávání** podle typu kódu. Prefix na začátku parametru
-`code` určuje, podle jakého pole se filtruje (bez prefixu = hlavní kód `StiCode`):
-
-| Prefix       | Filtruje podle                                             | Příklad                          |
-|--------------|-----------------------------------------------------------|----------------------------------|
-| *(žádný)*    | Hlavní skladový kód (`StiCode`)                           | `code=0320663`                   |
-| `{StiId}`    | Interní ID produktu                                       | `code={StiId}685699`             |
-| `{PartNo}`   | Výrobní číslo                                             | `code={PartNo}GU605CX-QR149`     |
-| `{PartNo2}`  | Druhé výrobní číslo                                       | `code={PartNo2}90NR0M65-M007X0`  |
-| `{CodeEAN}`  | EAN                                                       | `code={CodeEAN}4711636262347`    |
-| `{ManName}`  | Název výrobce (kategorie typu `MAN`)                     | `code={ManName}ASUS`             |
-| `{CodeAll}`  | Libovolný evidovaný kód produktu (`StoItemCode`)          | `code={CodeAll}...`              |
-
-
-##### Statistika použití za posledních 30 dní
-
-| CodePrefix | Requests | Used by companies |
-|------------|----------|--------------------|
-| PartNo     | 1104     | 2                  |
-| ManName    | 120      | 1                  |
-
-
-
-> **Hromadný dotaz:** Do `code` lze vložit **více hodnot oddělených tabulátorem** (`\t`) —
-> vrátí se záznamy pro všechny. Prefix se uvede jednou na začátku a platí pro celou dávku.
-
-
-##### Statistika použití za posledních 30 dní
-
-| `\t` | Requests | Used by companies |
-|------------|----------|--------------------|
-|  `\t`    | 22053     | 14                  |
-
-
-
-
 
 
 
@@ -896,7 +903,7 @@ vrátí N elementů. Spolu se `StoItemBase` pokrývá metodu `ProductFullInfo` z
 |--------------|--------|--------------------------------------------------------------------------------|
 | `Id`         | i4     | ID konkrétní hodnoty parametru u produktu (`CpsId`) — jednoznačný klíč řádku    |
 | `StiId`      | i4     | Interní ID produktu                                                            |
-| `StiCode`    | string | Hlavní skladový kód produktu                                                   |
+| `StiCode`    | string | Hlavní SWS skladový kód produktu                                                   |
 | `StiCode2`   | string | Alternativní kód produktu                                                      |
 | `StiPartNo`  | string | Výrobní číslo                                                                  |
 | `StiPartNo2` | string | Druhé výrobní číslo                                                            |
@@ -1139,6 +1146,9 @@ Provázání na straně klienta: `ConParSet.CpaId` → `ConPar.Id`, `ConParSet.C
 ### 6.1 Alza - export X-StoItemQtyFreeRealX
 Timeout na jejich straně na stažení dat je 5 minut. Export upraven podle jejich požadavku. Mají svůj formát, který  jenom přijímají.
 
+
+Alza stahuje data a pak dělá objednávky přes EDI. 
+
 ##### Příklad:
 ukázka pro jeden produkt 40BF0100EU
 
@@ -1187,7 +1197,7 @@ https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultTy
 | Name | name of the product | *text* |
 
 ### 6.2 HP Tronic - export  X-StoItemQtyFreeBOHPT
-HP Tronic cz vlastní firmu Nay sk a mají společný systém, ale data si každá firma stahuje zvlášť. HP Tronik dělá za obě firmy společné blokování produktů. Přes webservice chtějí vidět dobu naskladnění a počet kolik toho můžou objednat (free stock + blokované zboží). 
+HP Tronic cz vlastní firmu Nay sk a mají společný jednotný systém, ale data si každá firma stahuje zvlášť. HP Tronik dělá za obě firmy společné blokování produktů přes objednávky. Přes webservice chtějí vidět dobu, kdy se to naskladní a počet kolik toho můžou objednat (free stock + blokované zboží). 
 
 ##### Příklad:
 ukázka pro jeden produkt 40BF0100EU
