@@ -209,7 +209,7 @@ Každý export existuje ve třech variantách — liší se pouze suffixem v `re
 
 **Příklad — stejná data, tři varianty (`StoItemQtyFree`):**
 
-`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=ASC00511&resultType=StoItemQtyFree`
+`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=LNM01353&resultType=StoItemQtyFree`
 
 ```xml
 <!-- Atributy (výchozí) -->
@@ -219,7 +219,7 @@ Každý export existuje ve třech variantách — liší se pouze suffixem v `re
 </Result>
 ```
 
-`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=ASC00511&resultType=StoItemQtyFree_El`
+`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=LNM01353&resultType=StoItemQtyFree_El`
 
 ```xml
 <!-- Elementy (_El) -->
@@ -238,7 +238,7 @@ Každý export existuje ve třech variantách — liší se pouze suffixem v `re
 </Result>
 ```
 
-`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=ASC00511&resultType=StoItemQtyFree_Schema`
+`https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=LNM01353&resultType=StoItemQtyFree_Schema`
 
 ```xml
 <!-- Schéma (_Schema) — definice všech polí a jejich datových typů -->
@@ -340,7 +340,7 @@ skladovou dostupnost, logistické údaje i informace o obrázcích. Odpovídá m
 | Pole            | Typ         | Popis                                                                      |
 |-----------------|-------------|----------------------------------------------------------------------------|
 | `Id`            | i4          | Interní ID produktu v i6       |
-| `Code`          | string      | Hlavní skladový kód SWS (např. `ASC00511`)                                 |
+| `Code`          | string      | Hlavní skladový kód SWS (např. `LNM01353`)                                 |
 | `Code2`         | string      | Alternativní/druhý kód `‹ověřit›`                                          |
 | `PartNo`        | string      | Katalogové (výrobní) číslo výrobce                                         |
 | `PartNo2`       | string      | Druhé výrobní/objednací číslo výrobce                                      |
@@ -429,7 +429,7 @@ dat než `StoItemBase`). Odpovídá metodě `AllProductsNow` / `ProductNow` z AL
 | Pole        | Typ     | Popis                                                        |
 |-------------|---------|--------------------------------------------------------------|
 | `Id`        | i4      | Interní ID produktu v i6                                     |
-| `Code`      | string  | Hlavní skladový kód SWS (např. `ASC00511`)                  |
+| `Code`      | string  | Hlavní skladový kód SWS (např. `LNM01353`)                  |
 | `Code2`     | string  | Alternativní/druhý kód `‹ověřit›`                           |
 | `PartNo`    | string  | Katalogové (výrobní) číslo výrobce                          |
 | `PartNo2`   | string  | Druhé výrobní/objednací číslo výrobce                       |
@@ -1152,7 +1152,7 @@ Alza stahuje data a pak dělá objednávky přes EDI.
 ##### Příklad:
 ukázka pro jeden produkt 40BF0100EU
 
-https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=TCL00117&resultType=X-StoItemQtyFreeRealX
+https://terminal.sws.cz/i6ws/default.asmx/GetResultByCode?code=LNM01353&resultType=X-StoItemQtyFreeRealX
 
 ```xml
 <?xml version="1.0" encoding="utf-8"?>
