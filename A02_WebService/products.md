@@ -95,7 +95,7 @@ GET https://JMENO:HESLO@HOST/i6ws/Default.asmx/GetResultByFromTo?resultType=‹R
 | CodePrefix   | Requests | Used by companies | Poznámka |
 |--------------|----------|--------------------|----------|
 | DocTrInv     | 11909    | 18                 | Document Transfer - Invoice (Format for import into I6). |
-| Order        | 8629     | 2                  | Export of Orders with Items include ShipTo and B2C informations. |
+| Order        | 8629     | 2                  | Export of Orders with Items. |
 | DocTrExp     | 1398     | 3                  | Document Transfer - Expedition (Format for import into I6). |
 | DocTrDel     | 643      | 3                  | Document Transfer - Delivery. |
 | StoItemBase  | 243      | 6                  | Detailní popis produktu. Nechápu proč u toho to používají, asi chyba. |
@@ -161,6 +161,15 @@ Tento export podporuje **rozšířené vyhledávání** podle typu kódu. Prefix
 | StoItemSiv      | 761      | 1                  |
 | StoItemPriceOrd | 714      | 1                  |
 
+
+##### Příklad hromadného dotazu
+
+V URL se tabulátor zapisuje jako `%09` (URL-kódovaný znak `\t`). Následující dotaz vrátí
+export `StoItemPriceOrd` pro celou dávku produktů v jednom volání:
+
+```xml
+http://www.sws.cz/i6ws/Default.asmx/GetResultByCode?resultType=StoItemPriceOrd&code=456282%09504741%09556581%09795719%09795721%09795722%09795723%09795724%09795725%09795726%09795727%09795728%09648723%09648725%09648726%09648727%09648738%09542326%09542327%09542328
+```
 
 
 

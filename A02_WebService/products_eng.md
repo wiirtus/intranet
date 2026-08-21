@@ -96,7 +96,7 @@ GET https://USER:PASSWORD@HOST/i6ws/Default.asmx/GetResultByFromTo?resultType=�
 | CodePrefix   | Requests | Used by companies | Note |
 |--------------|----------|--------------------|----------|
 | DocTrInv     | 11909    | 18                 | Document Transfer – Invoice (format for import into I6). |
-| Order        | 8629     | 2                  | Export of orders with items, including ShipTo and B2C information. |
+| Order        | 8629     | 2                  | Export of orders with items. |
 | DocTrExp     | 1398     | 3                  | Document Transfer – Expedition (format for import into I6). |
 | DocTrDel     | 643      | 3                  | Document Transfer – Delivery. |
 | StoItemBase  | 243      | 6                  | Detailed product description. Unclear why partners use FromTo with this export — probably a mistake. |
@@ -166,7 +166,14 @@ parameter determines which field is used for filtering (no prefix = the main cod
 | StoItemPriceOrd | 714      | 1                  |
 
 
+##### Batch query example
 
+In the URL the tab is written as `%09` (the URL-encoded `\t` character). The following request
+returns the `StoItemPriceOrd` export for a whole batch of products in a single call:
+
+```xml
+http://www.sws.cz/i6ws/Default.asmx/GetResultByCode?resultType=StoItemPriceOrd&code=456282%09504741%09556581%09795719%09795721%09795722%09795723%09795724%09795725%09795726%09795727%09795728%09648723%09648725%09648726%09648727%09648738%09542326%09542327%09542328
+```
 
 ### 3.2 Authentication
 
@@ -1161,7 +1168,7 @@ Linking on the client side: `ConParSet.CpaId` → `ConPar.Id`, `ConParSet.CpvId`
 ### 6.1 Alza – export X-StoItemQtyFreeRealX
 
 The timeout on Alza's side for downloading the data is 5 minutes. The export was customized to
-their requirements. They have their own fixed format which they simply consume.
+their requirements. 
 
 Alza downloads the data and then places orders via EDI.
 

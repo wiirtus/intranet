@@ -1,0 +1,69 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<salesout sender_id='0009218184' currency='CZK' partner_id='SWS' message_type='SLSRPT' recipient_id='SECZ3' bp_code='9218184' country='CZ' doc_number='26081600013' >
+<row id='1'>
+<date>2026-08-12</date>
+<customer_id>18612</customer_id>
+<vatid>CZ28623762</vatid>
+<company>TD computer s.r.o.</company>
+<address>Topolová 709/3</address>
+<address2></address2>
+<town>Olomouc</town>
+<zip>78301   </zip>
+<country>CZ        </country>
+<delivery_address>Werichova 721/1</delivery_address>
+<delivery_address2></delivery_address2>
+<delivery_town>Olomouc – Nové Sady</delivery_town>
+<delivery_zip>779 00  </delivery_zip>
+<delivery_country>CZ        </delivery_country>
+<pn>MUF-256BE4/APC</pn>
+<serial></serial>
+<sales_price>1138</sales_price>
+<currency>CZK</currency>
+<units>2</units>
+<document_no>FV26112091</document_no>
+</row>
+<row id='2'>
+<date>2026-08-12</date>
+<customer_id>14758</customer_id>
+<vatid>CZ28274032</vatid>
+<company>FLEXTRON electronic, s.r.o.</company>
+<address>Růžová 1189/14</address>
+<address2></address2>
+<town>Kyjov</town>
+<zip>697 01  </zip>
+<country>CZ        </country>
+<delivery_address>Kostelec 54</delivery_address>
+<delivery_address2></delivery_address2>
+<delivery_town>Kostelec u Kyjova</delivery_town>
+<delivery_zip>696 51  </delivery_zip>
+<delivery_country>CZ        </delivery_country>
+<pn>MZ-V9S1T0BW</pn>
+<serial>S7U4NU1YB36632</serial>
+<sales_price>4384</sales_price>
+<currency>CZK</currency>
+<units>1</units>
+<document_no>FV26112161</document_no>
+</row>
+<row id='3'>
+<date>2026-08-10</date>
+<customer_id>8853</customer_id>
+<vatid>CZ26375401</vatid>
+<company>Ascendi spol. s r.o.</company>
+<address>Barákova 557/71</address>
+<address2></address2>
+<town>Plzeň - Božkov</town>
+<zip>326 00  </zip>
+<country>CZ        </country>
+<delivery_address>Palackého nám. 28</delivery_address>
+<delivery_address2></delivery_address2>
+<delivery_town>PLzeň</delivery_town>
+<delivery_zip>30100   </delivery_zip>
+<delivery_country>CZ        </delivery_country>
+<pn>MZ-77E1T0B/EU</pn>
+<serial>S8NBNS0L308139</serial>
+<sales_price>5901</sales_price>
+<currency>CZK</currency>
+<units>1</units>
+<document_no>FV26111031</document_no>
+</row>
+</salesout>

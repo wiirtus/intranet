@@ -1,0 +1,15 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<stock sender_id='0009218184' recipient_id='SECZ3' bp_code='9218184' country='CZ' message_type='INVRPT' date='2026-08-16' doc_number='26081600012' >
+<row id='1'>
+<pn>MZ-77E1T0B/EU</pn>
+<units_stock>21</units_stock>
+</row>
+<row id='2'>
+<pn>MZ-77E2T0B/EU</pn>
+<units_stock>22</units_stock>
+</row>
+<row id='3'>
+<pn>MZ-V9S1T0BW</pn>
+<units_stock>1</units_stock>
+</row>
+</stock>
