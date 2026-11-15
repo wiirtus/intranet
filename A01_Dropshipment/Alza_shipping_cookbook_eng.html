@@ -1,0 +1,1244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alza Dropshipment – Shipping Cookbook</title>
+<script>
+  // Set theme before first paint (no flash)
+  (function () {
+    var saved = localStorage.getItem('cookbook-theme');
+    var sys = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-theme', saved || sys);
+  })();
+</script>
+<style>
+  :root {
+    --navy: #0F1B42;
+    --navy-2: #1d2f6f;
+    --yellow: #FFC800;
+    --font: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: "Cascadia Code", "JetBrains Mono", Consolas, "Courier New", monospace;
+    --radius: 14px;
+  }
+  [data-theme="light"] {
+    --bg: #f4f6fb;
+    --surface: #ffffff;
+    --surface-2: #f1f4fa;
+    --text: #1b2340;
+    --muted: #5b6480;
+    --border: #e1e6f0;
+    --accent: #2f5bea;
+    --accent-soft: #e8eeff;
+    --heading: #0F1B42;
+    --code-bg: #f6f8fc;
+    --inline-code-bg: #eef1f8;
+    --shadow: 0 1px 2px rgba(15,27,66,.06), 0 8px 24px rgba(15,27,66,.06);
+    --green: #0f8a4a; --green-bg: #e3f6ec;
+    --amber: #a86a00; --amber-bg: #fff3d0;
+    --red: #c23535;   --red-bg: #fde8e8;
+    --grey: #6b7390;  --grey-bg: #eef0f5;
+    --blue: #2f5bea;  --blue-bg: #e8eeff;
+    --hl-tag: #0F1B42; --hl-attr: #9a3fb8; --hl-string: #0f8a4a; --hl-number: #c25a00; --hl-literal: #2f5bea; --hl-punct: #7a83a0;
+  }
+  [data-theme="dark"] {
+    --bg: #0a0f1f;
+    --surface: #111833;
+    --surface-2: #172042;
+    --text: #e4e8f6;
+    --muted: #97a1c2;
+    --border: #253058;
+    --accent: #7ea2ff;
+    --accent-soft: #1b2a57;
+    --heading: #ffffff;
+    --code-bg: #0d1430;
+    --inline-code-bg: #1d2850;
+    --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.35);
+    --green: #4fd68f; --green-bg: #12352a;
+    --amber: #ffcf5a; --amber-bg: #3a2f0e;
+    --red: #ff8a8a;   --red-bg: #3d1a22;
+    --grey: #a3abc8;  --grey-bg: #222b4d;
+    --blue: #7ea2ff;  --blue-bg: #1b2a57;
+    --hl-tag: #ffd966; --hl-attr: #d6a2ff; --hl-string: #6fe0a2; --hl-number: #ffad66; --hl-literal: #8fb0ff; --hl-punct: #8590b5;
+  }
+
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 15.5px/1.65 var(--font);
+    transition: background .25s, color .25s;
+  }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  /* ---------- Top bar ---------- */
+  .topbar {
+    position: sticky; top: 0; z-index: 50;
+    display: flex; align-items: center; gap: 12px;
+    height: 56px; padding: 0 20px;
+    background: color-mix(in srgb, var(--surface) 85%, transparent);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border);
+  }
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; color: var(--heading); }
+  .brand .logo {
+    width: 30px; height: 30px; border-radius: 8px;
+    background: linear-gradient(135deg, var(--navy) 0 50%, var(--yellow) 50% 100%);
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.15);
+  }
+  .topbar .spacer { flex: 1; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 34px; padding: 0 12px; border-radius: 9px;
+    border: 1px solid var(--border); background: var(--surface); color: var(--text);
+    font: 600 13px var(--font); cursor: pointer;
+  }
+  .btn:hover { border-color: var(--accent); color: var(--accent); }
+  .btn svg { width: 16px; height: 16px; }
+  #menuBtn { display: none; }
+
+  /* ---------- Layout ---------- */
+  .layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); max-width: 1440px; margin: 0 auto; }
+  nav.toc {
+    position: sticky; top: 56px; align-self: start;
+    height: calc(100vh - 56px); overflow-y: auto;
+    padding: 24px 14px 40px 20px; border-right: 1px solid var(--border);
+  }
+  .toc h4 { margin: 0 0 10px 8px; font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .toc ol { list-style: none; margin: 0; padding: 0; }
+  .toc a {
+    display: flex; gap: 8px; align-items: baseline;
+    padding: 6px 10px; border-radius: 8px; color: var(--muted); font-size: 13.5px; line-height: 1.35;
+  }
+  .toc a:hover { background: var(--surface-2); color: var(--text); text-decoration: none; }
+  .toc a.active { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .toc .n { min-width: 20px; font-variant-numeric: tabular-nums; font-weight: 700; opacity: .8; }
+  .toc ol ol a { padding-left: 38px; font-size: 12.5px; }
+  .toc ol ol { display: none; }
+  .toc li.open > ol { display: block; }
+
+  main { padding: 28px 40px 80px; min-width: 0; }
+
+  /* ---------- Hero ---------- */
+  .hero {
+    position: relative; overflow: hidden;
+    padding: 40px 40px 34px; margin-bottom: 28px; border-radius: 20px;
+    background:
+      radial-gradient(circle at 92% 10%, rgba(255,200,0,.35), transparent 38%),
+      linear-gradient(135deg, var(--navy) 0%, var(--navy-2) 100%);
+    color: #fff; box-shadow: var(--shadow);
+  }
+  .hero::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: 0; height: 5px;
+    background: linear-gradient(90deg, var(--yellow), #ffe27a, var(--yellow));
+  }
+  .hero .kicker { font-size: 12px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--yellow); }
+  .hero h1 { margin: 8px 0 10px; font-size: clamp(28px, 4vw, 42px); line-height: 1.15; }
+  .hero .subtitle { max-width: 820px; margin: 0 0 22px; color: #d5dcf2; font-size: 16.5px; }
+  .hero .subtitle em { font-style: normal; }
+  .chips { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 10px; }
+  .chip {
+    padding: 10px 14px; border-radius: 12px;
+    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
+    font-size: 13.5px; color: #e8ecfa;
+  }
+  .chip b { display: block; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--yellow); margin-bottom: 2px; }
+  .chip a { color: #fff; text-decoration: underline; text-decoration-color: rgba(255,255,255,.4); }
+  .chip code { background: rgba(255,255,255,.12); color: #fff; }
+  .legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; font-size: 12.5px; color: #cfd6ef; align-items: center; }
+
+  /* ---------- Section cards ---------- */
+  section.card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 8px 34px 26px; margin-bottom: 24px; box-shadow: var(--shadow);
+  }
+  h2, h3, h4 { color: var(--heading); scroll-margin-top: 76px; line-height: 1.3; }
+  h2 { display: flex; align-items: center; gap: 14px; font-size: 24px; margin: 22px 0 14px; }
+  h2 .num {
+    flex: none; display: grid; place-items: center;
+    width: 38px; height: 38px; border-radius: 11px;
+    background: var(--yellow); color: var(--navy); font-size: 17px; font-weight: 800;
+  }
+  h3 { font-size: 18px; margin: 30px 0 10px; padding-left: 12px; border-left: 4px solid var(--yellow); }
+  h4 { font-size: 15px; margin: 22px 0 8px; }
+  p, li { color: var(--text); }
+  strong { color: var(--heading); }
+  hr { display: none; }
+
+  code {
+    font-family: var(--mono); font-size: .86em;
+    background: var(--inline-code-bg); padding: .12em .4em; border-radius: 6px;
+  }
+
+  /* ---------- Tables ---------- */
+  .table-wrap { overflow-x: auto; margin: 14px 0 18px; border: 1px solid var(--border); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  thead th {
+    position: sticky; top: 0; text-align: left; font-weight: 700; font-size: 12.5px;
+    letter-spacing: .03em; color: var(--heading);
+    background: var(--surface-2); padding: 10px 14px; border-bottom: 1px solid var(--border);
+  }
+  td { padding: 9px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  td:last-child { min-width: 260px; }
+  td.tight, th.tight { width: 1%; }
+  td.tight { white-space: nowrap; }
+  th.tight { min-width: 90px; }
+  td code { white-space: nowrap; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:nth-child(even) td { background: color-mix(in srgb, var(--surface-2) 45%, transparent); }
+  tbody tr:hover td { background: var(--accent-soft); }
+
+  .pill {
+    display: inline-block; min-width: 26px; padding: 1px 9px; border-radius: 999px;
+    font-size: 12px; font-weight: 700; text-align: center; white-space: nowrap;
+  }
+  .pill.green { color: var(--green); background: var(--green-bg); }
+  .pill.amber { color: var(--amber); background: var(--amber-bg); }
+  .pill.red   { color: var(--red);   background: var(--red-bg); }
+  .pill.grey  { color: var(--grey);  background: var(--grey-bg); }
+  .pill.blue  { color: var(--blue);  background: var(--blue-bg); }
+
+  .dir {
+    display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+    padding: 2px 8px; border-radius: 6px; font-size: 11.5px; font-weight: 700;
+  }
+  .dir .a { background: var(--navy); color: #fff; padding: 0 6px; border-radius: 4px; }
+  .dir .s { background: var(--yellow); color: var(--navy); padding: 0 6px; border-radius: 4px; }
+  [data-theme="dark"] .dir .a { background: #2b3d80; }
+
+  /* ---------- Callouts ---------- */
+  blockquote {
+    margin: 16px 0; padding: 12px 16px 12px 48px; position: relative;
+    border-radius: 12px; border: 1px solid var(--border); background: var(--surface-2);
+  }
+  blockquote p { margin: 4px 0; }
+  blockquote::before {
+    position: absolute; left: 14px; top: 12px; width: 22px; height: 22px; border-radius: 50%;
+    display: grid; place-items: center; font-weight: 800; font-size: 13px;
+  }
+  blockquote.note { border-color: color-mix(in srgb, var(--blue) 35%, transparent); background: var(--blue-bg); }
+  blockquote.note::before { content: "i"; background: var(--blue); color: var(--surface); font-family: Georgia, serif; }
+  blockquote.todo { border-color: color-mix(in srgb, var(--amber) 45%, transparent); background: var(--amber-bg); }
+  blockquote.todo::before { content: "!"; background: var(--yellow); color: var(--navy); }
+  blockquote.todo strong:first-child { color: var(--amber); }
+
+  /* ---------- Code ---------- */
+  .code-wrap { position: relative; margin: 14px 0 18px; }
+  .code-wrap .lang {
+    position: absolute; top: 8px; left: 14px; font: 700 10.5px var(--font);
+    letter-spacing: .12em; text-transform: uppercase; color: var(--muted);
+  }
+  .code-wrap .copy {
+    position: absolute; top: 6px; right: 8px; height: 26px; padding: 0 10px;
+    border-radius: 7px; border: 1px solid var(--border); background: var(--surface);
+    color: var(--muted); font: 600 11.5px var(--font); cursor: pointer; opacity: 0; transition: opacity .15s;
+  }
+  .code-wrap:hover .copy { opacity: 1; }
+  .code-wrap .copy.done { color: var(--green); border-color: var(--green); }
+  pre {
+    margin: 0; padding: 32px 18px 16px; overflow-x: auto;
+    background: var(--code-bg); border: 1px solid var(--border); border-radius: 12px;
+    font: 13px/1.6 var(--mono);
+  }
+  pre code { background: none; padding: 0; font-size: inherit; }
+  .hljs-tag, .hljs-name { color: var(--hl-tag); }
+  .hljs-attr { color: var(--hl-attr); }
+  .hljs-string { color: var(--hl-string); }
+  .hljs-number { color: var(--hl-number); }
+  .hljs-literal, .hljs-keyword { color: var(--hl-literal); font-weight: 600; }
+  .hljs-punctuation { color: var(--hl-punct); }
+
+  /* ---------- Diagrams ---------- */
+  figure.diagram {
+    position: relative; margin: 18px 0 22px; padding: 22px 16px 14px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 14px;
+    text-align: center; overflow-x: auto; cursor: zoom-in;
+  }
+  figure.diagram pre.mermaid { background: none; border: 0; padding: 0; font-family: var(--font); color: transparent; }
+  figure.diagram svg { max-width: 100%; height: auto; }
+  figure.diagram .zoom {
+    position: absolute; top: 8px; right: 10px; font: 600 11px var(--font); color: var(--muted);
+    opacity: 0; transition: opacity .15s;
+  }
+  figure.diagram:hover .zoom { opacity: 1; }
+  .modal {
+    position: fixed; inset: 0; z-index: 100; display: none; place-items: center;
+    background: rgba(5,9,22,.75); backdrop-filter: blur(4px); cursor: zoom-out; padding: 3vh 3vw;
+  }
+  .modal.open { display: grid; }
+  .modal .inner {
+    width: 100%; max-height: 94vh; overflow: auto; padding: 24px;
+    background: var(--surface); border-radius: 16px; box-shadow: var(--shadow);
+  }
+  .modal svg { width: 100% !important; max-width: none !important; height: auto; }
+
+  img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+
+  footer { margin-top: 30px; color: var(--muted); font-size: 12.5px; text-align: center; }
+  #toTop {
+    position: fixed; right: 22px; bottom: 22px; z-index: 40; width: 42px; height: 42px; border-radius: 50%;
+    border: 0; background: var(--yellow); color: var(--navy); font-size: 20px; font-weight: 800;
+    box-shadow: var(--shadow); cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .2s;
+  }
+  #toTop.show { opacity: 1; pointer-events: auto; }
+  .loading { padding: 60px; text-align: center; color: var(--muted); }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1000px) {
+    .layout { grid-template-columns: 1fr; }
+    #menuBtn { display: inline-flex; }
+    nav.toc {
+      position: fixed; left: 0; top: 56px; z-index: 60; width: 300px; background: var(--surface);
+      transform: translateX(-105%); transition: transform .2s; box-shadow: var(--shadow);
+    }
+    nav.toc.open { transform: none; }
+    main { padding: 18px 14px 60px; }
+    section.card { padding: 4px 18px 20px; }
+    .hero { padding: 28px 22px; }
+  }
+
+  /* ---------- Print ---------- */
+  @media print {
+    .topbar, nav.toc, #toTop, .copy, .zoom { display: none !important; }
+    .layout { display: block; }
+    main { padding: 0; }
+    body { background: #fff; font-size: 11pt; }
+    section.card { box-shadow: none; border: 0; padding: 0; break-before: page; }
+    section.card:first-of-type { break-before: auto; }
+    figure.diagram, .table-wrap, pre, blockquote { break-inside: avoid; }
+    .hero { box-shadow: none; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .pill, .dir span, h2 .num { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    a { color: inherit; }
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <button class="btn" id="menuBtn" aria-label="Contents">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+  </button>
+  <div class="brand"><span class="logo"></span><span>Alza Dropshipment · Shipping Cookbook</span></div>
+  <div class="spacer"></div>
+  <button class="btn" id="printBtn" title="Print / save as PDF">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    PDF
+  </button>
+  <button class="btn" id="themeBtn" title="Switch light / dark">
+    <svg id="iconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+    <svg id="iconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    <span id="themeLabel">Dark</span>
+  </button>
+</header>
+
+<div class="layout">
+  <nav class="toc" id="toc"><h4>Contents</h4><ol id="tocList"></ol></nav>
+  <main>
+    <div id="content"><div class="loading">Loading…</div></div>
+    <footer>Generated from <code>Alza_shipping_cookbook_eng.md</code> · build 2026-11-15 21:13 · Source of API facts: Alza Trade API documentation</footer>
+  </main>
+</div>
+
+<div class="modal" id="modal"><div class="inner" id="modalInner"></div></div>
+<button id="toTop" aria-label="Back to top">↑</button>
+
+<script type="text/markdown" id="md-source"># Alza Dropshipment – Shipping Cookbook
+
+*How shipment communication with Alza works, how labels are created, which API messages each shipping mode needs and what data has to be stored – written from the point of view of a supplier (SWS) that runs this integration in production.*
+
+| | |
+|---|---|
+| **Audience** | ALSO – implementation team |
+| **Source of truth** | Alza Trade API – <https://trade-api-docs.alza.cz/> (version **1.185**, 20.10.2026). The old Apiary page (`dropa.docs.apiary.io`) now only redirects there. |
+| **Real-world examples** | SWS production logs (August 2026). Personal data of end customers is anonymised. |
+| **Status** | DRAFT – sections marked **[TODO – SWS]** are being completed (SQL data model, ERP screenshots). |
+
+---
+
+## Contents
+
+1. [TL;DR – answers to your questions](#1-tldr--answers-to-your-questions)
+2. [Roles, endpoints and basic rules](#2-roles-endpoints-and-basic-rules)
+3. [End-to-end order lifecycle](#3-end-to-end-order-lifecycle)
+4. [Shipping modes](#4-shipping-modes)
+5. [Which API messages are needed in each mode](#5-which-api-messages-are-needed-in-each-mode)
+6. [Delivery types, carriers and consolidation](#6-delivery-types-carriers-and-consolidation)
+7. [Label creation](#7-label-creation)
+8. [What data you need to store](#8-what-data-you-need-to-store)
+9. [How SWS does it (as-is)](#9-how-sws-does-it-as-is)
+10. [Error handling, retries, timeouts](#10-error-handling-retries-timeouts)
+11. [Implementation checklist](#11-implementation-checklist)
+12. [Open points](#12-open-points)
+
+---
+
+## 1. TL;DR – answers to your questions
+
+**"How does shipment communication with Alza work?"**
+Alza (the *Buyer*) pushes orders to you (the *Supplier*) – `Insert` → (`Extend`) → `Confirm` / `Cancel`. The `Confirm order` message tells you **where**, **how** and **when** the shipment goes (carrier, delivery type, shipping mode, route, departure time, COD, address). Once the parcel physically leaves your warehouse you report it with `Shipment departure`. After that you report tracking (`Track and Trace`, own contract only) and the final result (`Delivery result`).
+
+**"How are labels created?"**
+It depends on the **shipping mode** sent in `Confirm order` → `shipmentShippingMode`:
+
+| `shipmentShippingMode` | Who creates shipment no., package no. and label | How |
+|---|---|---|
+| `Supplier` (DSM) | **You** | Your own carrier integration (DPD, PPL, …) **or**, for Alza's own transport (`shippingCarrierCode = ALZA`), your own label printed with the routing data Alza sends in `Confirm order`. |
+| `Buyer` (ASM) | **Alza** | You call `Create shipment` and Alza returns shipment number, package numbers and a **PDF with carrier labels**. The shipping list (handover protocol) comes back in the `Shipment departure` response. |
+
+**"Which API messages are needed for each mode?"** → see the [matrix in chapter 5](#5-which-api-messages-are-needed-in-each-mode).
+
+**"What information do we need to store?"** → see [chapter 8](#8-what-data-you-need-to-store). In short: the Alza order number + your order number, every `orderItemId`, the complete `Confirm order` payload, the shipment/package numbers you report, the serial numbers, and a full log of every request/response.
+
+---
+
+## 2. Roles, endpoints and basic rules
+
+| Term in the API | Who | Implements |
+|---|---|---|
+| **Buyer** | Alza | **Buyer API** – the supplier calls it (`Availability`, `Create shipment`, `Delete shipment`, `Shipment departure`, `Track and Trace`, `Delivery result`) |
+| **Supplier** | SWS / ALSO | **Supplier API** – Alza calls it (`Insert order`, `Extend order`, `Cancel order`, `Confirm order`) |
+| **End customer** | Alza's customer | – |
+
+```mermaid
+flowchart LR
+    subgraph SUP["Supplier (SWS / ALSO)"]
+        SAPI["Supplier API<br/>(you host it)"]
+        ERP["ERP / WMS"]
+        CARR["Carrier integration<br/>(Supplier mode only)"]
+    end
+    subgraph ALZA["Buyer (Alza)"]
+        BAPI["Buyer API<br/>(Alza hosts it)"]
+    end
+    BAPI -- "Insert / Extend / Cancel / Confirm order" --> SAPI
+    SAPI --> ERP
+    ERP -- "Availability, Create/Delete shipment,<br/>Shipment departure, Track & Trace, Delivery result" --> BAPI
+    ERP --> CARR
+```
+
+**Basic rules (all required by Alza):**
+
+- HTTPS with a commonly trusted certificate, TLS 1.2+.
+- JSON, `Content-Type: application/json; charset=utf-8`, `User-Agent` header filled.
+- 23 h/day availability, maintenance window max. 1 h between 22:00 and 03:00.
+- Authentication: HMAC-SHA1 token, Base64 + URL-encoded (see *Authentication token* in the Alza docs).
+- `timestamp` must always be current – also when a message is re-sent.
+- Messages must be **idempotent**: the receiver must accept the same message repeated within a short time (only `timestamp` changes).
+- All times are **CET**.
+
+---
+
+## 3. End-to-end order lifecycle
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as End customer
+    participant A as Alza (Buyer)
+    participant S as Supplier (SWS / ALSO)
+    participant K as Carrier
+
+    Note over S,A: Store availability
+    S->>A: Availability (stock + price)
+    A->>C: Product shown on web
+
+    Note over C,S: Order processing
+    C->>A: New order
+    A->>S: Insert order (reserve stock)
+    S-->>A: supplierOrder, validUntil
+    opt Reservation about to expire
+        A->>S: Extend order
+    end
+    alt Customer cancels before Confirm
+        A->>S: Cancel order (must be accepted)
+    else Customer paid / COD agreed
+        A->>S: Confirm order (carrier, delivery type, shipping mode, route, address, COD, departure time)
+    end
+
+    Note over S,K: Order shipping
+    S->>S: Pick, pack, (serial numbers)
+    alt shipmentShippingMode = Buyer
+        S->>A: Create shipment
+        A-->>S: shipment no., package no., label PDF
+        opt Wrong shipment
+            S->>A: Delete shipment
+        end
+    else shipmentShippingMode = Supplier
+        S->>K: Create shipment in carrier system / print own label
+    end
+    S->>K: Hand over parcels
+    S->>A: Shipment departure (packages, items, serials)
+    A-->>S: OK (+ shipping list PDF in Buyer mode)
+
+    Note over C,S: Delivery
+    opt Supplier's own transport contract
+        S->>A: Track and Trace (Depot / Delivery / Stored / Delivered / Rejected)
+    end
+    K->>C: Delivery
+    alt Supplier cancels (goods issue)
+        S->>A: Delivery result = Canceled
+    else Parcel returned to supplier
+        S->>A: Delivery result = Rejected
+    else Delivered (own carriage)
+        S->>A: Delivery result = Delivered
+    end
+```
+
+### Order states (supplier side)
+
+```mermaid
+stateDiagram-v2
+    [*] --> Reserved: Insert order OK
+    [*] --> OutOfStock: Insert order -3
+    Reserved --> Reserved: Extend order
+    Reserved --> Cancelled: Cancel order (must accept)
+    Reserved --> Cancelled: validUntil expired
+    Reserved --> Confirmed: Confirm order
+    Confirmed --> Cancelled: Cancel order accepted (0)
+    Confirmed --> Confirmed: Cancel order rejected (-5)
+    Confirmed --> Cancelled: Delivery result Canceled
+    Confirmed --> Shipped: Shipment departure
+    Shipped --> Delivered: Delivery result Delivered / carrier info
+    Shipped --> Returned: Delivery result Rejected
+    Cancelled --> [*]
+    Delivered --> [*]
+    Returned --> [*]
+    OutOfStock --> [*]
+```
+
+Key rules:
+
+- **Cancel before Confirm** → must be accepted immediately (`-5` is **not** allowed).
+- **Cancel after Confirm, before departure** → you may reject with `-5` (e.g. "Order was sent"). If you do not know yet, answer `-5` and later send `Delivery result = Canceled` if you managed to stop it.
+- **After `Shipment departure`** → the order can no longer be cancelled.
+- `shipmentDepartureTime` (formerly `demandedExpeditionDate`) in `Confirm order` is binding – the shipment must not leave **earlier or later**.
+
+---
+
+## 4. Shipping modes
+
+Shipping mode defines **who handles the shipment number, package numbers, shipping list, shipping labels and carrier data**. It is sent per order in `Confirm order` → `shipmentShippingMode`. Modes can be combined – one supplier can get orders in both modes.
+
+| | **Supplier mode – DSMD** | **Supplier mode – DSMA** | **Buyer mode – ASM** |
+|---|---|---|---|
+| `shipmentShippingMode` | `Supplier` | `Supplier` | `Buyer` |
+| Transport contract | Supplier's | Alza's | Alza's |
+| Shipment number | Supplier | Supplier | **Alza** (`Create shipment`) |
+| Package numbers | Supplier / carrier | Supplier / carrier | **Alza** (`Create shipment`) |
+| Shipping label | Supplier (carrier system) | Supplier (carrier system or own label for `ALZA` routes) | **Alza** – PDF from `Create shipment` |
+| Shipping list (handover protocol) | Supplier | Supplier | **Alza** – PDF in `Shipment departure` response |
+| Track and Trace message | **Required** | Not required | Not required |
+| Typical use | Supplier already has carrier integrations | Supplier has integrations, Alza's prices / Alza's own transport | Supplier has no carrier integration |
+
+> **Note:** DSMD / DSMA / ASM are Alza's internal names. Which contract (yours or Alza's) applies to which carrier is agreed with Alza during onboarding – it is **not** sent in the API. **[TODO – SWS]** confirm how this is set up for SWS (see [open points](#12-open-points)).
+
+### Supplier mode (DSM) – shipping phase
+
+```mermaid
+sequenceDiagram
+    participant A as Alza
+    participant S as Supplier
+    participant K as Carrier
+    A->>S: Confirm order (shipmentShippingMode=Supplier, carrier, route, packageSorting...)
+    S->>S: Pick & pack, read serials, print labels
+    alt carrier = ALZA (Alza transport / linehaul)
+        S->>S: Print own label with route, ramp, sorting letter, Alza barcodes
+    else external carrier (DPD, PPL, CZPOST...)
+        S->>K: Create consignment, get package numbers + carrier label
+    end
+    S->>K: Hand over
+    S->>A: Shipment departure (your shipment no., package numbers, items, serials)
+    A-->>S: errorCode 0
+    opt own transport contract (DSMD)
+        S->>A: Track and Trace (status updates)
+        S->>A: Delivery result Delivered
+    end
+```
+
+### Buyer mode (ASM) – shipping phase
+
+```mermaid
+sequenceDiagram
+    participant A as Alza
+    participant S as Supplier
+    participant K as Carrier
+    A->>S: Confirm order (shipmentShippingMode=Buyer, carrier, address...)
+    S->>S: Pick & pack, weigh packages
+    S->>A: POST /shipment  Create shipment (packages with weight, items)
+    A-->>S: 201 shipmentNumber, packages[number, fullNumber, pdf], pdf (all labels)
+    S->>S: Print labels from PDF, stick on packages
+    opt Something wrong (wrong package count, weight...)
+        S->>A: DELETE /shipment/{shipment}  Delete shipment
+        S->>A: Create shipment again
+    end
+    S->>K: Hand over
+    S->>A: POST /shipment/{shipment}/departure
+    A-->>S: shippingList.pdf (+ shippingListGroup.pdf)
+    S->>K: Hand over printed shipping list
+```
+
+---
+
+## 5. Which API messages are needed in each mode
+
+Legend: **R** = required, **C** = conditional, **–** = not used. Direction: A→S = Alza calls you, S→A = you call Alza.
+
+| API message | Dir. | DSMD (Supplier, own contract) | DSMA (Supplier, Alza contract) | ASM (Buyer) | Notes |
+|---|---|---|---|---|---|
+| `POST /availability` | S→A | R | R | R | Stock + price. Update every ≥10 min (changes only), `PartialFull` at night 00:00–06:00. |
+| `POST /order/{order}` Insert order | A→S | R | R | R | Reserve stock. Return `supplierOrder`, `validUntil`. `-3` = out of stock. |
+| `POST /order/{order}/extend` Extend order | A→S | R | R | R | Return `-5` if you don't want to extend → Alza cancels. |
+| `DELETE /order/{order}` Cancel order | A→S | R | R | R | See cancellation rules in chapter 3. |
+| `POST /order/{order}/confirm` Confirm order | A→S | R | R | R | **The shipping instruction.** Store everything. |
+| `POST /shipment` Create shipment | S→A | – | – | **R** | Returns shipment no., package no., label PDFs. |
+| `DELETE /shipment/{shipment}` Delete shipment | S→A | – | – | C | Only before departure, to fix a wrong shipment. |
+| `POST /shipment/{shipment}/departure` Shipment departure | S→A | R | R | R | `{shipment}` = your number (DSM) or Alza's number from Create shipment (ASM). Returns shipping list in ASM. |
+| `POST /track` Track and Trace | S→A | **R** | – | – | Required with supplier's own contract. ParcelShop: send `Stored` before `Delivered`. |
+| `POST /order/{order}/delivery` Delivery result | S→A | R | C | C | `Delivered` – own carriage only. `Canceled` / `Rejected` – any mode. |
+
+### Fields that differ by mode in the shipping messages
+
+| Field | Create shipment (ASM) | Shipment departure – DSM | Shipment departure – ASM |
+|---|---|---|---|
+| `shippingCarrier.shippingCarrierCode` | required, same as in Confirm | required for new suppliers | required for new suppliers |
+| `shippingCarrier.shippingCarrierDeliveryType` | real type, **`Supplier` forbidden** | real type, or `Supplier` = you deliver yourself | real type, **`Supplier` forbidden** |
+| `parcelShop` | required if it was in Confirm | required if it was in Confirm | required if it was in Confirm |
+| `packages[]` | `packageId` (your temp id) + `weight` | `number` (+ `fullNumber`, `ttUrl`, `weight`) | numbers returned by Create shipment |
+| `items[]` | `order`, `orderItemId`, `packageId`, `quantity` | `order`, `orderItemId`, `packageNumber`, `quantity`, `serials` | same as DSM |
+| Response | `shipment.pdf`, `packages[].pdf` | `errorCode` | `shipment.shippingList.pdf`, `shippingListGroup.pdf` |
+
+**One product in two packages** (FAQ from Alza): the first package carries `quantity: 1`, the second one the same `orderItemId` with `quantity: 0`.
+
+**Serial numbers:** if `serialNumbersRequired = true` in Insert order, `items[].serials` in Shipment departure is mandatory. If only `serialNumbersExpected = true`, send them when you have them.
+
+---
+
+## 6. Delivery types, carriers and consolidation
+
+### `shipmentDeliveryType` (in Confirm order)
+
+| Value | Meaning | Consolidation of several orders in one shipment |
+|---|---|---|
+| `B2C` | End customer address | Not allowed |
+| `B2B` | Business customer address | Not allowed |
+| `Branch` | Alza branch / warehouse (`deliveryBranchId` filled) | **Required** – group orders going to the same branch into consolidated packages |
+| `ParcelShop` | Parcel shop / AlzaBox (`parcelShop` object filled) | Not allowed |
+
+In all cases **one order must go in one shipment** (no splitting of an order across shipments).
+
+### Carrier codes and delivery types
+
+`shippingCarrierCode`: `ALZA, CZPOST, DHL, DPD, DPDSK, DPDHU, FOFR, GebruderWeiss, GEISPARCEL, GEISCARGO, GLS, GO, HELICAR, MagyarPOST, Najbert, PPL, RHENUS, SKPOST, SKYNET, TOPTRANS, UPS, WEDO, ZASILKOVNA, ZavolejSiKuryra`
+
+`shippingCarrierDeliveryType` (selection): `COURIER, ALZABRANCH, ALZABOX, CZPOSTD, CZPOSTP, CZPOSTB, DPD, DPDALZABOX, DPDBOX, DPDPARCELSHOP, PPL, PPLPARCELSHOP, GLS, ZASILKOVNA, …` and the special value **`Supplier`**.
+
+**The special value `Supplier`** in Confirm order:
+
+- `shippingCarrierCode` filled (e.g. `CZPOST`) + delivery type `Supplier` → **you choose** the concrete delivery type for that carrier (e.g. `CZPOSTD`) and send it back in Create shipment / Shipment departure.
+- `shippingCarrierCode` empty + delivery type `Supplier` → **you deliver yourself**; send back `Supplier`.
+
+### Package sorting
+
+`Confirm order` → `packageSorting.packageSortingGroup` = `RegularDirect` (default) | `Linehaul` | `CrossLC`. **Packages from different groups must not be physically mixed** during shipping. In Supplier mode, print `packageSortingPrint` (e.g. `L`, `C`) on the label.
+
+---
+
+## 7. Label creation
+
+```mermaid
+flowchart TD
+    A["Confirm order received"] --> B{"shipmentShippingMode"}
+    B -- "Buyer" --> C["Create shipment<br/>POST /shipment"]
+    C --> D["Alza returns shipment no.,<br/>package numbers, label PDF"]
+    D --> E["Print PDF labels"]
+    B -- "Supplier" --> F{"shippingCarrierCode"}
+    F -- "ALZA" --> G["Print OWN label with Alza routing data<br/>(route, ramp, sorting letter, delivery order,<br/>AlzaBox / branch code, Alza piece barcodes)"]
+    F -- "DPD / PPL / CZPOST / ..." --> H["Create consignment in carrier system<br/>(own or Alza contract)"]
+    H --> I["Print carrier label"]
+    F -- "empty + type Supplier" --> J["Own delivery – own label"]
+    E --> K["Shipment departure"]
+    G --> K
+    I --> K
+    J --> K
+```
+
+### 7.1 Buyer mode (ASM) – Alza creates the label
+
+1. Pack the order, weigh each package.
+2. `POST /shipment` with `packages[]` (`packageId`, `weight`, optional `volume`) and `items[]` (which `orderItemId` is in which `packageId`).
+3. Response `201`: `shipment.shipmentNumber`, `shipment.packages[]` (`packageId`, `number`, `fullNumber`, `pdf`), `shipment.pdf` (all labels in one PDF).
+4. Download and print the PDF, stick labels. **Store** shipment number and package numbers – you need them for departure.
+5. If anything changes (number of packages, weights) → `DELETE /shipment/{shipment}` and create again. Not possible after departure.
+6. `POST /shipment/{shipmentNumber}/departure` → response contains the **shipping list** PDF to hand over to the driver.
+
+### 7.2 Supplier mode with an external carrier (DPD, PPL, CZPOST, …)
+
+The label comes from **your carrier integration** exactly as for any other shipment of yours. Alza only needs the result in `Shipment departure`:
+
+- `packages[].number` – package number (short),
+- `packages[].fullNumber` – the full barcode from the label (substring is usually the tracking number),
+- `packages[].ttUrl` – tracking URL (preferred way to give Alza correct tracking),
+- `shippingCarrier` – real carrier code and delivery type.
+
+For parcel shop deliveries use `parcelShop.parcelShopBranchCode` from Confirm order as the pick-up point in the carrier system.
+
+### 7.3 Supplier mode with Alza's own transport (`shippingCarrierCode = ALZA`)
+
+Alza picks up from the supplier's warehouse and moves parcels through its hubs (linehaul). The supplier prints **its own label** with the data from `Confirm order`:
+
+| Data on the label | Source field in Confirm order | Example (SWS) |
+|---|---|---|
+| Route | `route.routeName` | `SWS CZ01 -> CZTC1 -> Východní Čechy L 12*` |
+| Hub(s) and ramp(s) | `route.routeStops[].branchName` + `ramp` | `CZTC1 / L17` |
+| Delivery order number | `route.routeDeliveryOrder` | `6` |
+| Sorting letter | `packageSorting.packageSortingPrint` | `L` (Linehaul), `C` (CrossLC) |
+| AlzaBox / parcel shop | `parcelShop.parcelShopBranchCode` | `AB3478` |
+| Alza branch | `deliveryBranchId` + `deliveryAddress` | `4255` – alza.cz Čakovice |
+| External order number | `shipmentExternalOrderNumber` | *"Required for label printing"* |
+| COD | `cashOnDeliveryValue` + currency | `0 CZK` |
+| Recipient | `deliveryAddress` | |
+| Your package barcode | your package number (sent later in departure) | |
+
+For **Branch** deliveries Alza also sends `orderItems[].alzaBarCodes` in **Insert order** – one barcode per piece (e.g. `BCX3489207239`). **Print them (Code-128) on each piece.** The count equals the ordered quantity.
+
+> **[TODO – SWS]** Add a photo/scan of a real SWS label for an `ALZA` route (AlzaBox and Branch) and of a DPD label, with the fields highlighted.
+
+---
+
+## 8. What data you need to store
+
+Everything below is needed either to answer later messages, to build labels, or to resolve disputes with Alza.
+
+```mermaid
+erDiagram
+    ORDER ||--|{ ORDER_ITEM : contains
+    ORDER ||--o| ORDER_CONFIRM : "confirmed by"
+    ORDER }o--o| SHIPMENT : "shipped in"
+    SHIPMENT ||--|{ PACKAGE : has
+    PACKAGE ||--|{ PACKAGE_ITEM : contains
+    ORDER_ITEM ||--o{ PACKAGE_ITEM : "packed as"
+    PACKAGE_ITEM ||--o{ SERIAL : has
+    ORDER ||--o{ API_LOG : logs
+    SHIPMENT ||--o{ API_LOG : logs
+
+    ORDER {
+        string alzaOrderNumber "DDxxxxxxxx, key from URL"
+        string supplierOrder "your order no."
+        int supplierBranchId
+        datetime validUntil
+        bool extendUsed
+        string status
+        datetime cancelRequestedAt
+    }
+    ORDER_ITEM {
+        long orderItemId "Alza unique id - key for everything"
+        string code "your product code"
+        int quantity
+        decimal purchasePriceWithoutFees
+        string currency
+        string alzaBarCodes "list, branch delivery"
+        bool serialNumbersExpected
+        bool serialNumbersRequired
+    }
+    ORDER_CONFIRM {
+        string shipmentShippingMode "Supplier or Buyer"
+        string shipmentDeliveryType "B2C B2B Branch ParcelShop"
+        string shippingCarrierCode
+        string shippingCarrierDeliveryType
+        string parcelShopIdentification
+        string parcelShopBranchCode
+        string routeName
+        string routeStops "list branch+ramp"
+        int routeDeliveryOrder
+        string packageSortingGroup
+        string packageSortingPrint
+        datetime shipmentDepartureTime
+        decimal cashOnDeliveryValue
+        string paymentVS
+        int deliveryBranchId
+        string shipmentExternalOrderNumber
+        decimal shipmentValue
+        string deliveryAddress "full object"
+        string services "carryIn etc."
+    }
+    SHIPMENT {
+        string shipmentNumber "yours (DSM) or Alza's (ASM)"
+        string mode
+        string shippingCarrierCode
+        string shippingCarrierDeliveryType
+        decimal weight
+        decimal codValue
+        string labelPdfUrl "ASM"
+        string shippingListPdfUrl "ASM"
+        datetime departureReportedAt
+        string trackingStatus
+        string deliveryResult
+    }
+    PACKAGE {
+        string number
+        string fullNumber
+        string ttUrl
+        decimal weight
+        long packageId "ASM temp id"
+        string labelPdfUrl
+    }
+    PACKAGE_ITEM {
+        long orderItemId
+        int quantity
+    }
+    SERIAL {
+        string serialNumber
+    }
+    API_LOG {
+        string messageType
+        string direction
+        string requestBody
+        int httpStatus
+        string responseBody
+        int errorCode
+        datetime timestamp
+        int attempt
+    }
+```
+
+### Minimum checklist
+
+| Store | Why |
+|---|---|
+| Alza order number (`DD…`) ↔ your order number | Key in all Alza URLs; you return `supplierOrder` in Insert. |
+| `orderItemId` per line | Preferred item identification in Create shipment / Departure; **required for Branch delivery**. |
+| `alzaBarCodes` | Must be printed on each piece for Branch delivery. |
+| `serialNumbersExpected/Required` | Decides whether serials are mandatory in departure. |
+| `validUntil`, extend counter | Reservation expiry, handling of repeated Extend. |
+| **The whole Confirm order payload** | It is the shipping instruction (carrier, mode, address, route, COD, departure time). Keep the raw JSON too. |
+| Shipment number, package numbers, full numbers, tracking URL | Sent in departure; needed for T&T and support. ASM: returned by Alza. |
+| Package ↔ item ↔ quantity ↔ serials | Content of departure `items[]`. |
+| Label PDF / shipping list PDF URLs (ASM) | Re-print. |
+| Raw log of every request + response + HTTP status | Retries, idempotency, disputes with Alza (Alza support asks for it). |
+
+> **[TODO – SWS]** Add the SWS data model: real SQL tables and columns (order header, items, shipment, packages, log table `SDAL`) – to be supplied.
+
+---
+
+## 9. How SWS does it (as-is)
+
+### 9.1 Overview
+
+- SWS runs **Supplier shipping mode** (`shipmentShippingMode = Supplier`) – SWS creates shipment numbers, package numbers and labels itself.
+- Carriers seen in production: **`ALZA`** (Alza's own transport from SWS warehouse `CZ01` via hub `CZTC1`, for AlzaBox and Alza branch deliveries) and **`DPD`**.
+- Incoming JSON from Alza is converted to XML by the SWS middleware (`wsdrop-alza`) and processed in SQL; every message is logged in table **`SDAL`**.
+- Reservation (`validUntil`) = 7 days, end of day (e.g. Insert 18.08. → valid until 25.08. 23:59).
+- Extend is allowed **once**; a second Extend gets `-5 "only once extend is allowed"` → Alza then cancels.
+- Cancel after the parcel left gets `-5 "Order was sent"`.
+
+**`SDAL` log table** (one row per API message):
+
+| Column | Meaning |
+|---|---|
+| `SdalId` | Log id |
+| `SdalComId` | Customer (Alza) id in SWS ERP – `7993` |
+| `SdalType` | `insert`, `extend`, `delete`, `confirm`, … |
+| `SdalCode` | Alza order number (`DD…`) |
+| `SdalResult` | Returned `errorCode` |
+| `SdalC` | Created (date/time) |
+| `SdalXML` | Request converted to XML |
+| `SdalHTTPRespStatus` | Returned HTTP status |
+| `SdalHTTPResponse` | Returned JSON body |
+
+> **[TODO – SWS]** Process screenshots from ERP **i6**: Alza order in the order list, order detail with Confirm data, picking/packing screen, label printing, departure / dispatch screen, cancellation handling.
+
+### 9.2 Example – AlzaBox via Alza transport (anonymised)
+
+`Confirm order` (shown as XML after SWS conversion):
+
+```xml
+<orders>
+  <supplierId>200</supplierId><supplierBranchId>235</supplierBranchId>
+  <shippingCarrier>
+    <shippingCarrierCode>ALZA</shippingCarrierCode>
+    <shippingCarrierDeliveryType>ALZABOX</shippingCarrierDeliveryType>
+  </shippingCarrier>
+  <parcelShop>
+    <parcelShopIdentification>ALZABOX</parcelShopIdentification>
+    <parcelShopBranchCode>AB3478</parcelShopBranchCode>
+  </parcelShop>
+  <route>
+    <routeName>SWS CZ01 -&gt; CZTC1 -&gt; Východní Čechy L 12*</routeName>
+    <routeStops><branchName>CZTC1</branchName><ramp>L17</ramp></routeStops>
+    <routeDeliveryOrder>6</routeDeliveryOrder>
+  </route>
+  <shipmentDeliveryType>ParcelShop</shipmentDeliveryType>
+  <shipmentShippingMode>Supplier</shipmentShippingMode>
+  <cashOnDeliveryValue>0</cashOnDeliveryValue><cashOnDeliveryValueCurrency>CZK</cashOnDeliveryValueCurrency>
+  <packageSorting><packageSortingGroup>Linehaul</packageSortingGroup><packageSortingPrint>L</packageSortingPrint></packageSorting>
+  <shipmentDepartureTime>2026-08-19T14:30:00</shipmentDepartureTime>
+  <paymentVS>1504853468</paymentVS>
+  <deliveryAddress>
+    <companyName>Liberec - Staré Pavlovice - Hrdinů</companyName>
+    <addressName>[customer name]</addressName>
+    <streetWithNumber>Hrdinů 34/30</streetWithNumber><city>Liberec</city><zip>46001</zip><country>CZ</country>
+    <phone>[customer phone]</phone><email>[customer e-mail]</email>
+  </deliveryAddress>
+  <shipmentValue>1782</shipmentValue><shipmentValueCurrency>CZK</shipmentValueCurrency>
+</orders>
+```
+
+→ SWS prints its own label with route `CZTC1 / L17`, delivery order `6`, sorting letter `L`, AlzaBox `AB3478`.
+
+### 9.3 Example – Alza branch via Alza transport (consolidated)
+
+```xml
+<shippingCarrier><shippingCarrierCode>ALZA</shippingCarrierCode><shippingCarrierDeliveryType>Supplier</shippingCarrierDeliveryType></shippingCarrier>
+<route>
+  <routeName>SWS CZ01 -&gt; CZTC1 -&gt; CZLC4 -&gt; Čakovice</routeName>
+  <routeStops><branchName>CZTC1</branchName><ramp>L05</ramp></routeStops>
+  <routeStops><branchName>CZLC4</branchName><ramp>L53</ramp></routeStops>
+</route>
+<shipmentDeliveryType>Branch</shipmentDeliveryType>
+<shipmentShippingMode>Supplier</shipmentShippingMode>
+<packageSorting><packageSortingGroup>CrossLC</packageSortingGroup><packageSortingPrint>C</packageSortingPrint></packageSorting>
+<shipmentDepartureTime>2026-08-19T14:30:00</shipmentDepartureTime>
+<deliveryAddress><companyName>alza.cz Čakovice</companyName><streetWithNumber>Kostelecká 823/77</streetWithNumber><city>Praha</city><zip>19600</zip><country>CZ</country>...</deliveryAddress>
+<deliveryBranchId>4255</deliveryBranchId>
+```
+
+The matching Insert order carried 25 pieces with 25 `alzaBarCodes` (`BCX35076959731` … `BCX350769597325`) – one sticker per piece. Branch delivery = orders to the same branch are consolidated.
+
+### 9.4 Example – Shipment departure via DPD (anonymised)
+
+```json
+{
+  "shippingCarrier": { "shippingCarrierCode": "DPD", "shippingCarrierDeliveryType": "DPD" },
+  "cashOnDeliveryValue": 0.00, "cashOnDeliveryValueCurrency": "CZK",
+  "shipmentValue": 3032.00, "shipmentValueCurrency": "CZK",
+  "shipmentWeight": 0.8,
+  "packages": [
+    { "number": "13825096221168", "weight": 0.8, "fullNumber": "%007030013825096221168327203" }
+  ],
+  "items": [
+    { "order": "DD23334255", "packageNumber": "13825096221168", "quantity": 1,
+      "orderItemId": 3471466988, "code": "848007", "serials": ["201040003001V00EMR"] }
+  ]
+}
+```
+
+URL: `POST /shipment/{shipment}/departure`, where `{shipment}` is the SWS shipment number. Response `200 {"errorCode":0,"errorMessage":""}`.
+
+> **[TODO – SWS]** Track and Trace and Delivery result – does SWS send them for DPD (own contract), and an example from the log.
+
+---
+
+## 10. Error handling, retries, timeouts
+
+### Error codes
+
+| Code | Meaning | Data accepted |
+|---|---|---|
+| `0` | Success | Yes |
+| `-1` | Generic error (see `errorMessage`) | No |
+| `-2` | Invalid input data | No |
+| `-3` | Out of stock (Insert order) | Yes |
+| `-4` | Invalid price | No |
+| `-5` | Operation rejected (Extend, Cancel after Confirm, Availability limit) | Yes |
+| `-6` | Bad response | Yes |
+| `-7` | Resend limit violated | No |
+
+If data is **not** accepted, the sender must resend until it is. Always fill `errorMessage` on errors. HTTP `429` (no body) = rate limit → resend per intervals. Any HTTP status other than the documented 200/201/400 = not delivered → resend.
+
+### Resend intervals (minutes)
+
+| Message | Short | Default | Observed range | Subject |
+|---|---|---|---|---|
+| Insert / Extend / Cancel / Confirm order | 1 | 10 | 60 | Order |
+| Create / Delete shipment, Shipment departure, Track and Trace | 1 | 15 (temporarily 5) | 60 | Shipment |
+| Delivery result | 5 | 30 | 60 | Order |
+| Availability – Update / PartialFull / Full | 1/1/10 | 10/1/10 | 30/60/60 | Branch |
+
+*Short* applies when ≤ 2 other messages are in the observed range, otherwise *Default*.
+
+### Timeouts (seconds) – sender must wait longer than receiver
+
+| Message | Alza timeout | Supplier timeout |
+|---|---|---|
+| Insert / Extend / Cancel / Confirm order | 80 | 60 |
+| Create / Delete shipment, Departure, T&T, Delivery result | 60 | 80 |
+| Availability | 280 | 300 |
+
+Max. **5 parallel requests** of the same type per supplier.
+
+---
+
+## 11. Implementation checklist
+
+1. Get from Alza: `supplierId`, `supplierBranchId`(s), HMAC secret, test/production URLs; give Alza your Supplier API URL and your `customerId` for Alza.
+2. Implement Supplier API: Insert, Extend, Cancel, Confirm – idempotent, logged, response within 60 s.
+3. Decide which shipping modes you will run (Supplier / Buyer) and which carrier contracts (yours / Alza's) – agree with Alza.
+4. Map Confirm order → your ERP shipping order (carrier, delivery type, parcel shop, route, sorting, COD, departure time).
+5. Labels: carrier integration (DSM), own label for `ALZA` routes incl. Alza piece barcodes, or Create shipment PDF (ASM).
+6. Shipment departure with packages, items, serials – exactly at `shipmentDepartureTime`.
+7. Track and Trace (own contract) + Delivery result (Canceled / Rejected / Delivered).
+8. Availability: Update (changes only, 10 min–1 h), PartialFull at night.
+9. Retry engine with resend intervals, `-7` / `429` handling, full request/response log.
+10. Test with **Testing Buyer API** (`/trade-test/v2/...`) and **Invoke Supplier API** (Alza calls your API with test scenarios, e.g. `invokeInsertOrder`) – then switch to production.
+
+---
+
+## 12. Open points
+
+| # | Topic | Owner |
+|---|---|---|
+| 1 | SWS SQL data model (tables + columns) | SWS |
+| 2 | ERP i6 screenshots of the whole process | SWS |
+| 3 | Real SWS label examples (ALZA route – AlzaBox, Branch; DPD) | SWS |
+| 4 | DPD for Alza – SWS contract (DSMD) or Alza contract (DSMA)? Does SWS send Track and Trace? | SWS |
+| 5 | Delivery result – real example from the log | SWS |
+| 6 | Does SWS receive any `shipmentShippingMode = Buyer` orders (ASM)? | SWS |
+| 7 | Upcoming Alza changes 2026: `CompanyAddress`, `ShipmentAddress` (`shipmentDeliveryAddress` may differ from `deliveryAddress`), `glnList`, `taxNo`, `vatNo` max. 30 chars | ALSO – plan for it |
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.10.0/highlight.min.js"></script>
+<script type="module">
+import { marked } from 'https://cdn.jsdelivr.net/npm/marked@15.0.12/lib/marked.esm.js';
+import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11.4.1/dist/mermaid.esm.min.mjs';
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const slug = s => s.trim().toLowerCase().replace(/[^\p{L}\p{N}\s_-]/gu, '').replace(/\s/g, '-');
+
+/* ---------- Markdown -> HTML ---------- */
+marked.use({
+  gfm: true,
+  renderer: {
+    code({ text, lang }) {
+      if (lang === 'mermaid') {
+        return `<figure class="diagram"><span class="zoom">Click to enlarge ⤢</span><pre class="mermaid">${esc(text)}</pre></figure>`;
+      }
+      return false;
+    }
+  }
+});
+const content = $('#content');
+content.innerHTML = marked.parse($('#md-source').textContent);
+
+/* ---------- Hero from title, subtitle and meta table ---------- */
+(function buildHero() {
+  const h1 = $('h1', content);
+  if (!h1) return;
+  const hero = document.createElement('header');
+  hero.className = 'hero';
+  let html = `<div class="kicker">Alza Trade API · Supplier guide</div><h1>${h1.innerHTML}</h1>`;
+  let el = h1.nextElementSibling;
+  if (el && el.tagName === 'P') { html += `<p class="subtitle">${el.innerHTML}</p>`; const n = el.nextElementSibling; el.remove(); el = n; }
+  if (el && el.tagName === 'TABLE') {
+    html += '<div class="chips">' + $$('tbody tr', el).map(tr => {
+      const [k, v] = tr.children;
+      return `<div class="chip"><b>${k.textContent}</b>${v.innerHTML}</div>`;
+    }).join('') + '</div>';
+    el.remove();
+  }
+  html += `<div class="legend">Direction:
+      <span class="dir"><span class="a">Alza</span>→<span class="s">Supplier</span></span>
+      <span class="dir"><span class="s">Supplier</span>→<span class="a">Alza</span></span>
+      &nbsp; Required: <span class="pill green">R</span> Conditional: <span class="pill amber">C</span> Not used: <span class="pill grey">–</span></div>`;
+  hero.innerHTML = html;
+  h1.replaceWith(hero);
+})();
+
+/* ---------- Drop the markdown "Contents" chapter (sidebar replaces it) ---------- */
+$$('h2', content).forEach(h => {
+  if (h.textContent.trim().toLowerCase() === 'contents') {
+    let n = h.nextElementSibling;
+    while (n && n.tagName !== 'H2') { const x = n.nextElementSibling; n.remove(); n = x; }
+    h.remove();
+  }
+});
+
+/* ---------- Heading ids (GitHub-style, keeps the .md links working) ---------- */
+$$('h2, h3, h4', content).forEach(h => { h.id = slug(h.textContent); });
+$$('h2', content).forEach(h => {
+  const m = h.textContent.match(/^(\d+)\.\s+(.*)$/);
+  if (m) h.innerHTML = `<span class="num">${m[1]}</span><span>${h.innerHTML.replace(/^\d+\.\s+/, '')}</span>`;
+});
+
+/* ---------- Group chapters into cards ---------- */
+(function cards() {
+  const kids = [...content.children];
+  let card = null;
+  for (const el of kids) {
+    if (el.tagName === 'H2') { card = document.createElement('section'); card.className = 'card'; el.before(card); }
+    if (card && el.tagName !== 'HR') card.appendChild(el);
+    if (el.tagName === 'HR') el.remove();
+  }
+})();
+
+/* ---------- Tables: wrapper, pills, direction badges ---------- */
+const PILLS = { 'R': 'green', 'Required': 'green', 'Yes': 'green', 'C': 'amber', 'Yes/No': 'amber',
+                '–': 'grey', '-': 'grey', 'No': 'grey', 'Not required': 'grey' };
+$$('table', content).forEach(t => {
+  const w = document.createElement('div'); w.className = 'table-wrap'; t.before(w); w.appendChild(t);
+  $$('td', t).forEach(td => {
+    const txt = td.textContent.trim();
+    if (txt === 'A→S') td.innerHTML = '<span class="dir"><span class="a">Alza</span>→<span class="s">Supplier</span></span>';
+    else if (txt === 'S→A') td.innerHTML = '<span class="dir"><span class="s">Supplier</span>→<span class="a">Alza</span></span>';
+    else if (PILLS[txt]) td.innerHTML = `<span class="pill ${PILLS[txt]}">${txt}</span>`;
+    else if (/^-?\d+$/.test(txt) && td.cellIndex === 0 && t.rows[0].cells[0].textContent.trim() === 'Code') {
+      td.innerHTML = `<span class="pill ${txt === '0' ? 'green' : 'red'}">${txt}</span>`;
+    }
+  });
+  // Columns holding only pills / direction badges -> narrow, so text columns get the space
+  const head = t.tHead?.rows[0]; const body = [...(t.tBodies[0]?.rows || [])];
+  if (head) [...head.cells].forEach((th, i) => {
+    if (i === head.cells.length - 1 && head.cells.length > 2) return;
+    if (body.length && body.every(r => r.cells[i]?.querySelector(':scope > .pill:only-child, :scope > .dir:only-child'))) {
+      th.classList.add('tight'); body.forEach(r => r.cells[i].classList.add('tight'));
+    }
+  });
+});
+
+/* ---------- Callouts ---------- */
+$$('blockquote', content).forEach(b => b.classList.add(/TODO/.test(b.textContent) ? 'todo' : 'note'));
+
+/* ---------- Code blocks: highlight + copy ---------- */
+$$('pre > code', content).forEach(code => {
+  const pre = code.parentElement;
+  const lang = (code.className.match(/language-(\w+)/) || [])[1];
+  if (window.hljs && lang && hljs.getLanguage(lang)) hljs.highlightElement(code);
+  const w = document.createElement('div'); w.className = 'code-wrap'; pre.before(w); w.appendChild(pre);
+  w.insertAdjacentHTML('afterbegin', `<span class="lang">${lang || 'text'}</span><button class="copy">Copy</button>`);
+  $('.copy', w).onclick = async e => {
+    await navigator.clipboard.writeText(code.textContent);
+    e.target.textContent = 'Copied ✓'; e.target.classList.add('done');
+    setTimeout(() => { e.target.textContent = 'Copy'; e.target.classList.remove('done'); }, 1500);
+  };
+});
+
+/* ---------- External links in new tab ---------- */
+$$('a[href^="http"]').forEach(a => { a.target = '_blank'; a.rel = 'noopener'; });
+
+/* ---------- Sidebar TOC + scrollspy ---------- */
+const tocList = $('#tocList');
+$$('section.card').forEach(card => {
+  const h2 = $('h2', card); if (!h2) return;
+  const num = $('.num', h2)?.textContent || '';
+  const title = num ? h2.lastElementChild.textContent : h2.textContent;
+  const li = document.createElement('li');
+  li.innerHTML = `<a href="#${h2.id}" data-id="${h2.id}"><span class="n">${num}</span><span>${title}</span></a>`;
+  const subs = $$('h3', card);
+  if (subs.length) {
+    li.insertAdjacentHTML('beforeend', '<ol>' + subs.map(h => `<li><a href="#${h.id}" data-id="${h.id}">${h.textContent}</a></li>`).join('') + '</ol>');
+  }
+  tocList.appendChild(li);
+});
+const links = new Map($$('#tocList a').map(a => [a.dataset.id, a]));
+const spyHeads = $$('h2[id], h3[id]', content).filter(h => links.has(h.id));
+let spyActive = null;
+function spy() {
+  let cur = spyHeads[0];
+  for (const h of spyHeads) { if (h.getBoundingClientRect().top < 120) cur = h; else break; }
+  if (!cur || cur === spyActive) return;
+  spyActive = cur;
+  $$('#tocList a.active').forEach(x => x.classList.remove('active'));
+  $$('#tocList li.open').forEach(x => x.classList.remove('open'));
+  const a = links.get(cur.id); a.classList.add('active');
+  const top = a.closest('#tocList > li'); top?.classList.add('open');
+  top?.querySelector(':scope > a')?.classList.add('active');
+  a.scrollIntoView({ block: 'nearest' });
+}
+addEventListener('scroll', spy, { passive: true });
+spy();
+$('#menuBtn').onclick = () => $('#toc').classList.toggle('open');
+$$('#tocList a').forEach(a => a.addEventListener('click', () => $('#toc').classList.remove('open')));
+
+/* ---------- Mermaid with theme-aware colours ---------- */
+const FONT = getComputedStyle(document.documentElement).getPropertyValue('--font');
+const MERMAID_THEMES = {
+  light: {
+    background: '#f1f4fa', fontFamily: FONT, fontSize: '14px',
+    primaryColor: '#e8eeff', primaryTextColor: '#1b2340', primaryBorderColor: '#2f5bea',
+    secondaryColor: '#fff3d0', tertiaryColor: '#ffffff', lineColor: '#5b6480', textColor: '#1b2340',
+    mainBkg: '#e8eeff', nodeBorder: '#2f5bea', clusterBkg: '#ffffff', clusterBorder: '#c3cde6',
+    edgeLabelBackground: '#ffffff', titleColor: '#0F1B42',
+    actorBkg: '#0F1B42', actorBorder: '#0F1B42', actorTextColor: '#ffffff', actorLineColor: '#a7b0cc',
+    signalColor: '#1b2340', signalTextColor: '#1b2340',
+    labelBoxBkgColor: '#FFC800', labelBoxBorderColor: '#e0b000', labelTextColor: '#0F1B42', loopTextColor: '#1b2340',
+    noteBkgColor: '#fff3d0', noteBorderColor: '#FFC800', noteTextColor: '#1b2340',
+    activationBkgColor: '#fff3d0', activationBorderColor: '#FFC800', sequenceNumberColor: '#ffffff',
+    attributeBackgroundColorOdd: '#ffffff', attributeBackgroundColorEven: '#f4f6fb'
+  },
+  dark: {
+    darkMode: true, background: '#172042', fontFamily: FONT, fontSize: '14px',
+    primaryColor: '#1d2c5e', primaryTextColor: '#e4e8f6', primaryBorderColor: '#7ea2ff',
+    secondaryColor: '#3a2f0e', tertiaryColor: '#111833', lineColor: '#97a1c2', textColor: '#e4e8f6',
+    mainBkg: '#1d2c5e', nodeBorder: '#7ea2ff', clusterBkg: '#111833', clusterBorder: '#33406e',
+    edgeLabelBackground: '#172042', titleColor: '#ffffff',
+    actorBkg: '#FFC800', actorBorder: '#FFC800', actorTextColor: '#0F1B42', actorLineColor: '#3d4a78',
+    signalColor: '#e4e8f6', signalTextColor: '#e4e8f6',
+    labelBoxBkgColor: '#FFC800', labelBoxBorderColor: '#FFC800', labelTextColor: '#0F1B42', loopTextColor: '#e4e8f6',
+    noteBkgColor: '#3a2f0e', noteBorderColor: '#FFC800', noteTextColor: '#ffe9a3',
+    activationBkgColor: '#3a2f0e', activationBorderColor: '#FFC800', sequenceNumberColor: '#0F1B42',
+    attributeBackgroundColorOdd: '#172042', attributeBackgroundColorEven: '#111833'
+  }
+};
+const diagrams = $$('pre.mermaid', content);
+diagrams.forEach(d => { d.dataset.src = d.textContent; });
+
+async function renderDiagrams(theme) {
+  mermaid.initialize({
+    startOnLoad: false, theme: 'base', themeVariables: MERMAID_THEMES[theme], securityLevel: 'loose',
+    sequence: { mirrorActors: false, actorMargin: 70, messageMargin: 38, useMaxWidth: true },
+    flowchart: { curve: 'basis', useMaxWidth: true }, er: { useMaxWidth: true }
+  });
+  diagrams.forEach(d => { d.removeAttribute('data-processed'); d.textContent = d.dataset.src; });
+  await mermaid.run({ nodes: diagrams });
+}
+
+/* ---------- Theme switch ---------- */
+function applyThemeUi(theme) {
+  $('#themeLabel').textContent = theme === 'dark' ? 'Light' : 'Dark';
+  $('#iconSun').style.display = theme === 'dark' ? '' : 'none';
+  $('#iconMoon').style.display = theme === 'dark' ? 'none' : '';
+}
+async function setTheme(theme, persist = true) {
+  document.documentElement.setAttribute('data-theme', theme);
+  if (persist) localStorage.setItem('cookbook-theme', theme);
+  applyThemeUi(theme);
+  await renderDiagrams(theme);
+}
+const current = () => document.documentElement.getAttribute('data-theme');
+$('#themeBtn').onclick = () => setTheme(current() === 'dark' ? 'light' : 'dark');
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+  if (!localStorage.getItem('cookbook-theme')) setTheme(e.matches ? 'dark' : 'light', false);
+});
+applyThemeUi(current());
+await renderDiagrams(current());
+
+/* ---------- Print: always light ---------- */
+$('#printBtn').onclick = async () => {
+  const was = current();
+  if (was === 'dark') await setTheme('light', false);
+  window.print();
+  if (was === 'dark') await setTheme('dark', false);
+};
+
+/* ---------- Diagram zoom ---------- */
+const modal = $('#modal');
+content.addEventListener('click', e => {
+  const fig = e.target.closest('figure.diagram'); if (!fig) return;
+  const svg = $('svg', fig); if (!svg) return;
+  $('#modalInner').innerHTML = ''; $('#modalInner').appendChild(svg.cloneNode(true));
+  modal.classList.add('open');
+});
+modal.onclick = () => modal.classList.remove('open');
+document.addEventListener('keydown', e => { if (e.key === 'Escape') modal.classList.remove('open'); });
+
+/* ---------- Back to top ---------- */
+const toTop = $('#toTop');
+addEventListener('scroll', () => toTop.classList.toggle('show', scrollY > 700), { passive: true });
+toTop.onclick = () => scrollTo({ top: 0 });
+
+/* ---------- Deep link after render ---------- */
+if (location.hash) document.getElementById(decodeURIComponent(location.hash.slice(1)))?.scrollIntoView();
+</script>
+</body>
+</html>
