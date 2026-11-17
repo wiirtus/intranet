@@ -54,6 +54,137 @@ flowchart LR
     ERP --> CARR
 ```
 
+### Dva kanály objednávek mezi Alzou a SWS
+
+SWS dostává od Alzy objednávky dvěma nezávislými cestami. Rozliší se podle prefixu čísla objednávky:
+
+| | Standardní objednávka (EDI) | Dropshipping objednávka (Trade API) |
+|---|---|---|
+| Prefix čísla objednávky | **`OB…`** (např. `OB26238498`) | **`DD…`** (např. `DD26068181`) |
+| Kam se dodává | Sklad Alzy (např. `CZLC4` Chrášťany, GLN `8594177950173`) | Koncový zákazník, AlzaBox nebo pobočka Alzy |
+| Objednávka přichází přes | EDI **ORDERS** přes EDIStore | Trade API – Insert / Extend / Cancel / Confirm (tato kuchařka) |
+| Informace o odeslání Alze | EDI **DESADV** | Trade API – Shipment departure, Delivery result |
+| Faktura Alze | EDI **INVOIC** | EDI **INVOIC** |
+| Posílá se DESADV | Ano | **Ne** |
+
+```mermaid
+sequenceDiagram
+    participant A as Alza
+    participant E as EDIStore (EDI)
+    participant T as Trade API + middleware
+    participant S as SWS (ERP i6)
+
+    Note over A,S: 1) Standardní objednávka - prefix OB (např. OB26238498)
+    A->>E: ORDERS OB26238498
+    E->>S: Import objednávky do i6
+    S->>E: DESADV (avízo o odeslání)
+    S->>E: INVOIC (faktura)
+    E->>A: DESADV + INVOIC
+
+    Note over A,S: 2) Dropshipping objednávka - prefix DD (např. DD26068181)
+    A->>T: Insert / Confirm objednávky DD26068181
+    T->>S: Rezervace, potvrzení, doručovací adresa
+    S->>T: Shipment departure, Delivery result
+    T->>A: Zprávy Trade API
+    S->>E: Jen INVOIC (bez DESADV)
+    E->>A: INVOIC
+```
+
+Zbytek kuchařky popisuje **dropshippingový kanál**. EDI faktura k dropshipping objednávce je popsaná v 9.18, standardní EDI ORDERS (`OB26238498`) v 9.19.
+
+### Produktová data: jak Alza dostává od SWS sklad a ceny
+
+Alza dostává sklad a ceny SWS dvěma cestami – pro každý kanál objednávek jednou:
+
+| | 1) Export z WebService (pull) | 2) Trade API Availability (push) |
+|---|---|---|
+| Kdo to spouští | **Alza si data stahuje** z WebService SWS | **SWS data posílá** Alze |
+| K čemu slouží | Standardní nákup – Alza pak objednává přes EDI (`OB…`) | Dropshipping nabídka na alza.cz – Alza pak objednává přes Trade API (`DD…`) |
+| Endpoint | `https://terminal.sws.cz/i6ws/Default.asmx/GetResult?resultType=X-StoItemQtyFreeRealX` a `…=X-StoItemQtyFreeRealX2` | `POST https://trade-api.alza.cz/api/v1/availability` |
+| Formát | XML (`items` / `item` se skupinami `Pricing`, `Storage`, `Product`) | JSON (`productList[]`) |
+| Obsah | Všechny produkty (≈ 35 600) | `Update` = jen změněné produkty; `PartialFull` = všechny produkty skladem, každou noc |
+
+```mermaid
+flowchart LR
+    I6["ERP i6<br/>sklad + nákupní ceny"]
+    subgraph PULL["Pull: export z WebService"]
+        W1["X-StoItemQtyFreeRealX<br/>produkty 1 - 35 000"]
+        W2["X-StoItemQtyFreeRealX2<br/>produkty od 35 001"]
+    end
+    subgraph PUSH["Push: Trade API Availability"]
+        U["Update<br/>změněné produkty"]
+        P["PartialFull<br/>každou noc, max 10 000 ve zprávě"]
+    end
+    I6 --> W1
+    I6 --> W2
+    W1 -- "GET (Alza)" --> A1["Nákup Alzy"]
+    W2 -- "GET (Alza)" --> A1
+    A1 -- "EDI ORDERS OB..." --> I6
+    I6 --> U
+    I6 --> P
+    U -- "POST availability" --> A2["Dropship nabídka alza.cz"]
+    P -- "POST availability" --> A2
+    A2 -- "Insert order DD..." --> I6
+```
+
+#### 1) Exporty z WebService `X-StoItemQtyFreeRealX` a `X-StoItemQtyFreeRealX2`
+
+Feed připravený podle požadavků Alzy (podrobnosti v dokumentaci WebService SWS, kapitola 5.2.42–5.2.43 / 6.1).
+
+- **Dvě části kvůli 5minutovému timeoutu stahování na straně Alzy:** `X-StoItemQtyFreeRealX` vrací prvních 35 000 produktů (`TOP 35000`), `X-StoItemQtyFreeRealX2` zbytek (seřazeno podle `StiId`, `OFFSET 35000`). Alza volá obě části přes `GetResult`.
+- **Sklad** = volné množství skladu `29` (`QtyFree` + `QtyFree2`), ponížené o blokace objednávek.
+- **Cena** = dealerská (nákupní) cena pro Alzu; s recyklačním / autorským poplatkem i bez něj, měna `CZK`.
+- Export vidí jen firmy `0`, `6336` a `7993` (`7993` = Alza).
+
+```xml
+<items>
+  <item>
+    <Pricing>
+      <PriceWithFee>3889.7600</PriceWithFee>
+      <PriceWithoutFee>3889.0000</PriceWithoutFee>
+      <RecycleFee>0.7600</RecycleFee>
+      <CopyrightFee>0.0000</CopyrightFee>
+      <Currency>CZK</Currency>
+    </Pricing>
+    <Storage>
+      <StoredQuantity>44</StoredQuantity>
+    </Storage>
+    <Product>
+      <Name>Lenovo ThinkPad USB4 Dock 5000 - 65W - EU</Name>
+      <DealerCode>LNM01353</DealerCode>
+      <PartNumber>40BF0100EU</PartNumber>
+      <Ean>0195892132486</Ean>
+    </Product>
+  </item>
+</items>
+```
+
+| Skupina | Pole | Význam |
+|---|---|---|
+| `Pricing` | `PriceWithFee` | Nákupní cena za kus včetně poplatků |
+| `Pricing` | `PriceWithoutFee`, `RecycleFee`, `CopyrightFee`, `Currency` | Cena bez poplatků, poplatky, měna |
+| `Storage` | `StoredQuantity` | Počet kusů skladem |
+| `Product` | `Name`, `DealerCode`, `PartNumber`, `Ean` | Název, kód produktu SWS, kód výrobce, EAN |
+
+#### 2) Trade API Availability – `Update` a `PartialFull`
+
+SWS posílá sklad a ceny pro dropshippingovou nabídku. Job SWS volá middleware (`alzaavail`), který zprávu sestaví a odešle (9.9).
+
+| Typ | Kdy | Co se posílá | Pravidla podle dokumentace Alzy |
+|---|---|---|---|
+| **`Update`** | Kontrola každých 10 minut (`alzaavail?type=0`); odešle se jen při změně | Jen produkty, u kterých se změnil sklad nebo cena | Změny se sbírají aspoň 10 minut a posílají aspoň jednou za hodinu; nikdy celý sortiment najednou |
+| **`PartialFull`** | Každou noc kolem 03:32 (`alzaavail?type=2`) | Všechny produkty **skladem** (množství > 0), rozdělené do zpráv po max. 10 000 produktech (např. 10 000 + ≈ 3 770) | Jen 00:00–06:00; aspoň jednou za noc, jinak Alza nabídku vyčistí; hodnoty starší než ≈ 36 h se berou jako nedostupné |
+| `Full` (zastaralý) | Každou noc kolem 01:32 (`alzaavail?type=1`) | Všech ≈ 35 600 produktů, 8,7 MB | Nahrazen `PartialFull` – SWS ho pořád posílá |
+
+Seznam produktů používá **starý cenový režim** (`price`, `priceWithFee`, `fee`, `vat`; Alza doporučuje `countryPrices`). Příklad `Update`:
+
+```json
+{"supplierId":200,"supplierBranchId":235,"timestamp":"2026-11-16T02:52:59.850","importType":"Update","currency":"CZK",
+ "productList":[{"code":"847010","ean":"0617885021244","quantity":78,"price":309.6,"vat":21,"priceWithFee":312.96,"fee":3.36}]}
+```
+
+Cena, která se tu pošle, je cena, kterou Alza později vrací v Insert order (`purchasePriceWithoutFees`); SWS ji kontroluje proti naposledy odeslané dostupnosti (9.3, 9.9).
+
 **Základní pravidla (vše povinné podle Alzy):**
 
 - HTTPS s obecně důvěryhodným certifikátem, TLS 1.2 a vyšší.
@@ -342,7 +473,7 @@ Alza si zboží vyzvedne ve skladu dodavatele a vozí ho přes svá překladišt
 | 4 | Příjemce – řádky 2–4 | Ulice, PSČ + město, telefon | `deliveryAddress.streetWithNumber`, `zip` + `city`, `phone` |
 | 5 | *Č.obj.* | Číslo objednávky dodavatele | ERP dodavatele (SWS: `OrdCode` = `supplierOrder`) |
 | 6 | *Č.fakt.* | Číslo faktury dodavatele | ERP dodavatele |
-| 7 | *Č.ext.obj.* | Číslo objednávky Alzy, např. `DD20351220` | V ukázkách `paymentVS` (rovná se číslu objednávky Alzy); API má nově i `shipmentExternalOrderNumber` *„povinné pro tisk štítku“* |
+| 7 | *Č.ext.obj.* | Číslo objednávky Alzy, např. `DD20351220` | Číslo objednávky Alzy (`{order}` v URL). V ukázkách se rovná `paymentVS`; SWS tiskne `OrdCodeO` (viz 7.4). API má také `shipmentExternalOrderNumber` *„povinné pro tisk štítku“* |
 | 8 | Čárový kód + číslo nad ním | Číslo balíku, např. `1553076346` | Dodavatel – stejné číslo se pak posílá v Shipment departure jako `packages[].number` |
 | 9 | Řádek trasy | Trasa bez části odesílatele, např. `CZLC1 → CZLC4 → ZápadD 12` | `route.routeName` |
 | 10 | Řádky zastávek | Jeden řádek na zastávku: překladiště + rampa, např. `CZLC1  L10`, `CZLC4  L69` | `route.routeStops[].branchName` + `ramp` |
@@ -371,7 +502,28 @@ Balíky z různých skupin se nesmí fyzicky míchat (viz kapitola 6).
 
 U doručení na **pobočku** (Branch) posílá Alza navíc v **Insert order** `orderItems[].alzaBarCodes` – jeden čárový kód na každý kus (např. `BCX3489207239`). **Vytiskněte je (Code-128) a nalepte na každý kus.** Počet kódů odpovídá objednanému množství.
 
-> **[TODO – SWS]** Štítek pro doručení na **pobočku** (s čárovými kódy Alzy na kusy), štítek **DPD** a která sestava / šablona v i6 tiskne štítek `ALZA`.
+> **[TODO – SWS]** Která sestava / šablona v i6 tiskne štítek `ALZA` a nálepky Alzy na kusy.
+
+### 7.4 Skutečné štítky SWS (16.11.2026)
+
+Fotky ze skladu SWS pořízené 16.11.2026. Odpovídající zprávy z logu jsou v kapitole [9.16](#916-skutečné-objednávky-od-začátku-do-konce-1516112026).
+
+| Štítek | Objednávka | Co na něm je | Rozdíly proti ukázce Alzy (7.3) |
+|---|---|---|---|
+| AlzaBox – Linehaul | `DD26102128` | Odesílatel `SWS`; rámeček `L`; příjemce = `companyName`, ulice, PSČ + město, telefon; *C.obj* `OP26189264` (= `supplierOrder`), *C.fakt* `26163784`, *C.ext.obj* `DD26102128`; čárový kód balíku `55002350085113`; řádek trasy = celé `routeName`; `1/1`; rámeček `14` = `routeDeliveryOrder` | Zastávky / rampy (`CZTC1 L17`) se **netisknou**; řádek trasy obsahuje i `SWS CZ01 ->`; bez diakritiky (font tiskárny) |
+| Pobočka – Cross | `DD26104004` | Rámeček `C`; příjemce Alza.cz Brno; *C.obj* `OP26189329`, *C.fakt* `26163825`, *C.ext.obj* `DD26104004`; balík `55002355016300`; trasa `SWS CZ01 -> CZTC1 -> SKLC3 -> Brno`; `1/1`; spodní rámeček **prázdný** (pobočka nemá `routeDeliveryOrder`) | Rampy `L01` / `L54` se netisknou; **telefon `+420 725 255 800`** je z adresy pobočky uložené v i6 (`ComShipTo` dohledaná podle `deliveryBranchId = 2`), ne ze zprávy (`+420 225 340 111`) |
+| Nálepka Alzy na kus | `DD26104004` | Jedna nálepka na každý kus – čárový kód Code-128 `BCX37053037664` + název produktu (*Dell Multimediální klávesnice KB216*); 4 nálepky na 4 kusy `241837` | – |
+| DPD (B2C) | `DD26068181` | Tiskne i6 přes napojení na DPD (*16/11/26 12:58 … STO i6*): odesílatel **Alza a.s. – SWS**, Dostihová 1, 763 15 Slušovice; příjemce z `deliveryAddress`; *Vaše obj* `1520784885` = `paymentVS`; 0,4 kg; číslo balíku `13825096178983` (+ kontrolní znak `K`); služba `D-B2C`; směrování DPD `CZ-DPD-2360`, `327-CZ-40747`, `204B`; spodní čárový kód `0040747 13825096178983 327 203` | Číslo balíku = `packages[].number`, spodní čárový kód = `fullNumber` `%004074713825096178983327203` v Shipment departure |
+
+**Co SWS tiskne jako *C.ext.obj*:** číslo objednávky Alzy (`{order}` z URL, uložené v `OrdCodeO`) – ne `paymentVS`.
+
+![Skutečný štítek – AlzaBox Linehaul (DD26102128)](image/real_label_alzabox_linehaul_DD26102128.jpg)
+
+![Skutečný štítek – pobočka Cross (DD26104004)](image/real_label_branch_cross_DD26104004.jpg)
+
+![Skutečná nálepka Alzy na kus (DD26104004)](image/real_piece_barcode_DD26104004.jpg)
+
+![Skutečný štítek DPD (DD26068181)](image/real_label_dpd_DD26068181.jpg)
 
 ---
 
@@ -499,6 +651,7 @@ erDiagram
 - SWS jede v **režimu Supplier** – čísla zásilek, čísla balíků i štítky si vytváří samo.
 - Dopravci v ostrém provozu: **`ALZA`** (vlastní přeprava Alzy ze skladu SWS `CZ01` přes překladiště `CZTC1`, pro AlzaBoxy a pobočky Alzy) a **`DPD`**.
 - Middleware **`wsdrop-alza`** (`https://terminal.sws.cz/wsdrop-alza/sws1.ashx`) přijímá JSON od Alzy, převádí ho na XML a volá SQL proceduru. Odchozí zprávy skládají SQL procedury jako JSON a odesílá je middleware.
+- Produkční endpoint Alzy, který middleware volá: `https://trade-api.alza.cz/api/v1/`. Middleware zapisuje každou zprávu (původní JSON, oba směry) do denního logu `msg_RRRRMMDD.jsonl` – viz 9.16.
 - ID: Alza = firma **`ComId 7993`** v i6; `supplierId 200`, `supplierBranchId 235`; všechny automatické akce běží pod uživatelem i6 **`270` / `DDD`**.
 - Každá dropship objednávka má parametr **`ConParSet 434 / 3501`** – podle něj všechny procedury poznají dropship objednávky.
 
@@ -678,7 +831,7 @@ Co udělá úspěšný Confirm:
 | Balíky | `Expedition` (`ExpCodeO` číslo balíku, `ExpCodeS` krátké číslo DPD, `ExpWeight`, `ExpDateS` odesláno), přes `ExpDocuments` napojené na dodací list (typ 68) nebo fakturu (typ 73) |
 | Sériová čísla | `Warranty` (za expedici a produkt), čte je `dbo.SWSGetWarSerialNoForOrderAndExpedition` |
 
-**Dnes se neukládá:** `shipmentExternalOrderNumber`, `shipmentDeliveryServices`, `parcelShopIdentification` (jen kód pobočky), `regNo` / `vatNo`, surový JSON (v logu je jen XML).
+**Dnes se neukládá:** `shipmentExternalOrderNumber`, `shipmentDeliveryServices`, `parcelShopIdentification` (jen kód pobočky), `regNo` / `vatNo`. Surový JSON je jen v souborových logech middleware `msg_RRRRMMDD.jsonl` (viz 9.16), ne v databázi.
 
 ### 9.5 Mapování dopravců
 
@@ -715,7 +868,7 @@ Co udělá úspěšný Confirm:
 **Další pole:**
 
 - `shippingCarrier` = `DemNameE` + parametr 900.
-- `cashOnDeliveryValue` / `shipmentValue` z parametrů 890 / 889 (typ A); u B / C je dobírka 0 a hodnota se počítá z cen položek faktury.
+- `cashOnDeliveryValue` / `shipmentValue` z parametrů 890 / 889 (typ A). U B / C je dobírka 0 a **`shipmentValue` se nikdy neposílá** (výpočet v kódu je mrtvý – `CASE WHEN NULL IS NULL`) a `packages[].weight` se posílá jako text (viz 9.16).
 - `shipmentWeight` = `ExpWeight`, omezené `DemMaxWeight`.
 - `items[]`: `order`, `packageNumber`, `quantity` (`Warranty.WarQty`), `orderItemId` (parametr 879), `code`, `serials` (z `Warranty`; pokud je sériové číslo kratší než 4 znaky nebo je „Fuser unit 230V“, **posílá se místo něj číslo objednávky**). Korekční položka se vynechává.
 - Neposílá se: `expectedDeliveryDate`, `ttUrl`, `deliveryAddress`, `shipmentVolume`.
@@ -735,7 +888,7 @@ SWS posílá jen **Canceled** a **Rejected** – nikdy Delivered.
 | Zrušeno po odjezdu | Cancel od Alzy (`WSREQDELETE`) poté, co už odešel `!DSD!` | Rejected | `send DELETE after CONFIRM` |
 | Ruční volání (`@OrdId`, `@Type`) | 1 / 2 / 3 / 4 | Canceled / Canceled / Rejected / Canceled | `expired reservation` / `poslední poškozený kus` / `zakaznik neprevzal` / `chyba pri confirm` |
 
-`paymentVS` se bere z parametru 888. Po odeslání se nastaví `!DDR!` v `OrdTag`.
+`paymentVS` se bere z parametru 888. Po odeslání se nastaví `!DDR!` v `OrdTag`. Skutečné příklady (Canceled `DD26073359`, Rejected `DD25313597`) jsou v 9.16.
 
 ### 9.8 Stavové značky na objednávce
 
@@ -755,6 +908,7 @@ SWS posílá jen **Canceled** a **Rejected** – nikdy Delivered.
 ### 9.9 Dostupnost
 
 - `SWSAlzaDropAvailLog1` = aktuální nabídka pro Alzu (volné množství, nákupní cena, kód, EAN, sazba DPH, `LSndStatus`).
+- V živých logech (11.–17.11.2026) posílá SWS každou noc import `Full` (~01:32) **i** `PartialFull` (~03:32, po 10 000 produktech) a pár jednopoložkových zpráv `Update` v noci – vše ve starém cenovém režimu. Viz 9.16.
 - Po odeslání `SWSUpdSWSAlzaDropAvailLog` zkopíruje řádky s `LSndStatus ≤ 1` do `SWSAlzaDropAvailLog` (tabulka se předtím vyprázdní, pokud neexistují řádky se stavem 4) a stav jim zvýší o 3 (= odesláno).
 - Insert order porovnává cenu Alzy s oběma tabulkami (viz 9.3).
 
@@ -763,6 +917,7 @@ SWS posílá jen **Canceled** a **Rejected** – nikdy Delivered.
 ### 9.10 Fakturace
 
 - Confirm vytvoří fakturu (typ 73) ke každé objednávce.
+- Faktura jde Alze přes **EDI** (INVOIC přes EDIStore) – ne přes Trade API. U dropshipping objednávek se DESADV neposílá. Příklad v 9.18.
 - `SWSDropGenGroupInvoice` (Alza `ComId 7993`) vezme dočasné faktury (`InvNumTmp = 1`) dropship objednávek, jejichž skladové položky jsou všechny vydané, nejnovější přidělí ostré číslo (`NumUpd`, `InvCodeO` = variabilní symbol), ostatní do ní sloučí (`InvJoin`), prázdné smaže, nastaví parametr `944 / 3600` a `InvState = 1`. Výsledek: **jedna souhrnná faktura pro Alzu**.
 
 ### 9.11 E-mailová upozornění
@@ -782,6 +937,9 @@ Odesílá Database Mail (profil `DataSQL IBM`) na `alzadrop-ph@SWS.cz; alzadrop-
 - Žádný Track and Trace, žádný Delivery result Delivered, v departure chybí `ttUrl`.
 - Nevyužívaná nová pole Alzy: `shipmentExternalOrderNumber`, `shipmentDeliveryServices`, chystané `shipmentDeliveryAddress`, `glnList`.
 - Natvrdo zadané konstanty: `ComId 7993`, uživatel `270 / DDD`, id parametrů, GLN `8594177950111`, korekční položka `498094`, e-mailové adresy.
+- Problémy nalezené v logech (smyčka kvůli PSČ, nekonečné smyčky Delivery result, zdvojené zásilky na pobočky, HMAC token v logu) popisuje 9.20.
+- Dostupnost používá zastaralý import `Full` a starý cenový režim (`price`, `priceWithFee`, `fee`, `vat`).
+- Departure na pobočku (typ B / C): chybí `shipmentValue`, váha balíku se posílá jako text.
 
 ### 9.13 Příklad – AlzaBox přes přepravu Alzy
 
@@ -886,6 +1044,729 @@ POST https://terminal.sws.cz/wsdrop-alza/sws1.ashx/shipdep?shipment=6955290x8715
 
 Odpověď Alzy: `200 {"errorCode":0,"errorMessage":""}`.
 
+### 9.16 Skutečné objednávky od začátku do konce (15.–16.11.2026)
+
+Zdroj: log zpráv middleware `msg_20261115.jsonl`, `msg_20261116.jsonl` (jeden řádek JSON na zprávu). Na rozdíl od SQL logu obsahuje **původní JSON** a také to, co middleware posílá Alze.
+
+| Pole logu | Význam |
+|---|---|
+| `time` | Čas zprávy |
+| `exchangeId` | Páruje požadavek s odpovědí |
+| `direction` | `in` = middleware přijal, `out` = middleware odeslal |
+| `partner` | `client` = kdo volá middleware (Alza u objednávkových zpráv, job SWS u `shipdep` / `delivr` / `alzaavail`); `alza` = volání `https://trade-api.alza.cz/api/v1/` |
+| `operation`, `url`, `query` | Endpoint |
+| `httpStatus`, `body` | Status a tělo odpovědi |
+
+#### Časová osa tří vyfocených zásilek
+
+| Čas | Objednávka | Zpráva | Směr | Výsledek |
+|---|---|---|---|---|
+| 15.11. 12:34:47 | `DD26068181` | Insert – `LNC01121` × 1 | A→S | `0`, `OP26188783`, platí do 22.11. 23:59 |
+| 15.11. 12:55:41 | `DD26068181` | Confirm – `DPD` / `DPD`, `B2C`, `RegularDirect`, odjezd 16.11. 23:30 | A→S | `0` (13 s) |
+| 16.11. 10:49:02 | `DD26102128` | Insert – `653979` × 1 | A→S | `0`, `OP26189264`, platí do 23.11. 23:59 |
+| 16.11. 11:10:18 | `DD26102128` | Confirm – `ALZA` / `ALZABOX` `AB4136`, `Linehaul` `L`, pořadí doručení 14, odjezd 18.11. 14:00 | A→S | `0` (12 s) |
+| 16.11. 11:42:09 | `DD26104004` | Insert – `241837` × 4 se 4 `alzaBarCodes` | A→S | `0`, `OP26189329`, platí do 23.11. 23:59 |
+| 16.11. 11:43:17 | `DD26104004` | Confirm – `ALZA` / `Supplier` (→ `ALZABRANCH`), `Branch` id 2 Brno, `CrossLC` `C`, odjezd 18.11. 14:00 | A→S | `0` (12 s) |
+| 16.11. ~12:50 | všechny tři | Vytištěné štítky, fotky | – | |
+| 16.11. 13:16:07 | `DD26068181` | Shipment departure `7032719x8792565A` | S→A | `200`, `0` |
+| 16.11. 13:23 | `DD26102128`, `DD26104004` | EDI INVOIC `FV26163784` + `FV26163825` přes EDIStore, interchange `8307924`, `8307931` (dodací listy `DV26226106`, `DV26226152`) | S→A | Status `A` v EDIStore (vloženo 13:26:15–16), viz 9.18 |
+| 16.11. 15:00:33 | `DD26102128` | Shipment departure `7033242x8792555A` | S→A | `200`, `0` |
+| 16.11. 15:06:30 | `DD26104004` | Shipment departure `7033321x8792554B` | S→A | `200`, `0` |
+
+Co z logu vyplývá:
+
+- **Departure se posílá, když balík opustí SWS, ne v `shipmentDepartureTime`.** Obě zásilky `ALZA` byly nahlášené 16.11., přestože Alza chtěla 18.11. 14:00 – Alza to přijala (viz 9.6).
+- **Confirm trvá 12–13 s** (adresa, faktura) – hluboko pod timeoutem Alzy 80 s. Insert trvá 1–3 s.
+- **Číslo zásilky** = `<OrdId>x<ExpId>` + `A` (jedna objednávka) / `B` (pobočka, konsolidace).
+- **Departure na pobočku (typ B):** `packages[].weight` se posílá jako **text** (`"2.40000"`) a **chybí `shipmentValue`**, přestože Confirm obsahoval `1504` – Alza obojí přijala.
+- **Tok odchozích zpráv přes middleware:** job SWS pošle JSON fragment ze SQL procedury na `sws1.ashx/shipdep?shipment=…` jako `{"shpdep": "…"}`; middleware doplní `supplierId`, `supplierBranchId`, `timestamp`, pošle to na `https://trade-api.alza.cz/api/v1/shipment/{shipment}/departure` a odpověď Alzy vrátí jobu.
+
+```mermaid
+sequenceDiagram
+    participant A as Alza
+    participant M as Middleware wsdrop-alza
+    participant D as SQL I6SWS
+    participant J as Job SWS
+    A->>M: 11:42:09 POST order/DD26104004 (Insert)
+    M->>D: SWSDropShipOrder insert
+    D-->>M: OP26189329, validUntil 23.11.
+    M-->>A: 200 errorCode 0
+    A->>M: 11:43:17 POST order/DD26104004/confirm
+    M->>D: SWSDropShipOrder confirm (adresa, faktura)
+    M-->>A: 11:43:29 200 errorCode 0
+    Note over D: vychystání, balení, štítek, expedice 8792554
+    J->>D: SWSDropShipmentDeparture
+    D-->>J: zásilka 7033321x8792554B + JSON fragment
+    J->>M: 15:06:30 POST shipdep?shipment=7033321x8792554B
+    M->>A: POST trade-api.alza.cz/api/v1/shipment/7033321x8792554B/departure
+    A-->>M: 15:06:36 200 errorCode 0
+    M-->>J: 200 errorCode 0
+```
+
+#### Objednávka `DD26104004` – pobočka Brno, CrossLC (kompletní zprávy)
+
+Insert order – požadavek od Alzy:
+
+```json
+{"timestamp":"2026-11-16T11:42:09.333","customerId":7993,"supplierId":200,"supplierBranchId":235,
+ "regNo":"27082440","vatNo":"CZ27082440","itemsPriceCurrency":"CZK",
+ "orderItems":[{"orderItemId":3705303766,"code":"241837","quantity":4,"unitPrice":235.57,"purchasePriceWithoutFees":235.57,
+   "alzaBarCodes":["BCX37053037661","BCX37053037662","BCX37053037663","BCX37053037664"],
+   "serialNumbersExpected":false,"serialNumbersRequired":false}]}
+```
+
+Odpověď SWS (`200`):
+
+```json
+{"errorCode":0,"errorMessage":"","supplierOrder":"OP26189329","validUntil":"2026-11-23T23:59:00.000"}
+```
+
+Confirm order – požadavek od Alzy (odpověď `200 {"errorCode":0,"errorMessage":""}`):
+
+```json
+{"timestamp":"2026-11-16T11:43:17.357","customerId":7993,"supplierId":200,"supplierBranchId":235,
+ "regNo":"27082440","vatNo":"CZ27082440",
+ "shippingCarrier":{"shippingCarrierCode":"ALZA","shippingCarrierDeliveryType":"Supplier"},
+ "route":{"routeName":"SWS CZ01 -> CZTC1 -> SKLC3 -> Brno",
+          "routeStops":[{"branchName":"CZTC1","ramp":"L01"},{"branchName":"SKLC3","ramp":"L54"}]},
+ "shipmentDeliveryType":"Branch","shipmentShippingMode":"Supplier",
+ "cashOnDeliveryValue":0.0,"cashOnDeliveryValueCurrency":"CZK",
+ "packageSorting":{"packageSortingGroup":"CrossLC","packageSortingPrint":"C"},
+ "demandedExpeditionDate":"2026-11-18","shipmentDepartureTime":"2026-11-18T14:00:00.000","paymentVS":"1521022333",
+ "deliveryAddress":{"companyName":"Alza.cz Brno","addressName":"Skála","streetWithNumber":"Skořepka 336/15","city":"Brno",
+                    "phone":"+420 225 340 111","email":"sales.brno@alza.cz","country":"CZ","zip":"60200"},
+ "deliveryBranchId":2,"shipmentValue":1504.0,"shipmentValueCurrency":"CZK"}
+```
+
+Shipment departure – middleware posílá Alze (odpověď `200 {"errorCode":0,"errorMessage":""}`):
+
+```text
+POST https://trade-api.alza.cz/api/v1/shipment/7033321x8792554B/departure
+```
+
+```json
+{"supplierId":200,"supplierBranchId":235,"timestamp":"2026-11-16T15:06:30.594",
+ "shippingCarrier":{"shippingCarrierCode":"ALZA","shippingCarrierDeliveryType":"ALZABRANCH"},
+ "cashOnDeliveryValue":0.0,"cashOnDeliveryValueCurrency":"CZK","shipmentWeight":2.4,
+ "packages":[{"number":"55002355016300","weight":"2.40000","fullNumber":"55002355016300"}],
+ "items":[{"order":"DD26104004","packageNumber":"55002355016300","quantity":4,"orderItemId":3705303766,"code":"241837"}]}
+```
+
+#### Objednávka `DD26102128` – AlzaBox AB4136, Linehaul
+
+Confirm order – požadavek od Alzy (Insert: `653979` × 1 → `OP26189264`):
+
+```json
+{"timestamp":"2026-11-16T11:10:17.467","customerId":7993,"supplierId":200,"supplierBranchId":235,
+ "regNo":"27082440","vatNo":"CZ27082440",
+ "shippingCarrier":{"shippingCarrierCode":"ALZA","shippingCarrierDeliveryType":"ALZABOX"},
+ "parcelShop":{"parcelShopIdentification":"ALZABOX","parcelShopBranchCode":"AB4136"},
+ "route":{"routeName":"SWS CZ01 -> CZTC1 -> OLD2 - Východní Čechy M 12",
+          "routeStops":[{"branchName":"CZTC1","ramp":"L17"}],"routeDeliveryOrder":14},
+ "shipmentDeliveryType":"ParcelShop","shipmentShippingMode":"Supplier",
+ "cashOnDeliveryValue":0.0,"cashOnDeliveryValueCurrency":"CZK",
+ "packageSorting":{"packageSortingGroup":"Linehaul","packageSortingPrint":"L"},
+ "demandedExpeditionDate":"2026-11-18","shipmentDepartureTime":"2026-11-18T14:00:00.000","paymentVS":"1521013923",
+ "deliveryAddress":{"companyName":"Šimonovice - Buková (Hospůdka U Potůčku)","addressName":"Štěpán Hanuš",
+                    "streetWithNumber":"Buková 17","city":"Šimonovice","phone":"+420737829254",
+                    "email":"hanus.stepan@gmail.com","country":"CZ","zip":"46312"},
+ "shipmentValue":1074.0,"shipmentValueCurrency":"CZK"}
+```
+
+Shipment departure Alze – `POST …/shipment/7033242x8792555A/departure`:
+
+```json
+{"supplierId":200,"supplierBranchId":235,"timestamp":"2026-11-16T15:00:33.270",
+ "shippingCarrier":{"shippingCarrierCode":"ALZA","shippingCarrierDeliveryType":"ALZABOX"},
+ "cashOnDeliveryValue":0.0,"cashOnDeliveryValueCurrency":"CZK","shipmentValue":1074.0,"shipmentValueCurrency":"CZK",
+ "shipmentWeight":0.1,
+ "packages":[{"number":"55002350085113","weight":0.1,"fullNumber":"55002350085113"}],
+ "items":[{"order":"DD26102128","packageNumber":"55002350085113","quantity":1,"orderItemId":3705169209,"code":"653979"}]}
+```
+
+#### Objednávka `DD26068181` – DPD, B2C
+
+Confirm order – požadavek od Alzy (Insert: `LNC01121` × 1 → `OP26188783`). U DPD obsahuje `routeName` jen odesílatele (`SWS CZ01`):
+
+```json
+{"timestamp":"2026-11-15T12:55:40.203","customerId":7993,"supplierId":200,"supplierBranchId":235,
+ "regNo":"27082440","vatNo":"CZ27082440",
+ "shippingCarrier":{"shippingCarrierCode":"DPD","shippingCarrierDeliveryType":"DPD"},
+ "route":{"routeName":"SWS CZ01"},
+ "shipmentDeliveryType":"B2C","shipmentShippingMode":"Supplier",
+ "cashOnDeliveryValue":0.0,"cashOnDeliveryValueCurrency":"CZK",
+ "packageSorting":{"packageSortingGroup":"RegularDirect"},
+ "demandedExpeditionDate":"2026-11-16","shipmentDepartureTime":"2026-11-16T23:30:00.000","paymentVS":"1520784885",
+ "deliveryAddress":{"companyName":"","addressName":"jiri Ledvinka","streetWithNumber":"ZITAVSKA 3000","city":"Varnsdorf",
+                    "phone":"+420774085346","email":"jirka1236@seznam.cz","country":"CZ","zip":"40747"},
+ "shipmentValue":699.0,"shipmentValueCurrency":"CZK"}
+```
+
+Shipment departure Alze – `POST …/shipment/7032719x8792565A/departure`:
+
+```json
+{"supplierId":200,"supplierBranchId":235,"timestamp":"2026-11-16T13:16:07.681",
+ "shippingCarrier":{"shippingCarrierCode":"DPD","shippingCarrierDeliveryType":"DPD"},
+ "cashOnDeliveryValue":0.0,"cashOnDeliveryValueCurrency":"CZK","shipmentValue":699.0,"shipmentValueCurrency":"CZK",
+ "shipmentWeight":0.4,
+ "packages":[{"number":"13825096178983","weight":0.4,"fullNumber":"%004074713825096178983327203"}],
+ "items":[{"order":"DD26068181","packageNumber":"13825096178983","quantity":1,"orderItemId":3702664480,"code":"LNC01121"}]}
+```
+
+#### Ostatní zprávy 16.11.2026
+
+| Operace | Kdo volá koho | Počet |
+|---|---|---|
+| `alzaavail` | Job SWS → middleware (ptá se na změny dostupnosti; odpověď `{nic k aktualizaci}` = není co posílat) | 37 441 |
+| `availability` | Middleware → Alza (`Full` v 01:33, 2× `Update`, `PartialFull` v 03:32 ve 2 částech) | 5 |
+| `order/{DD}` (Insert) | Alza → SWS | 270 |
+| `order/{DD}/confirm` | Alza → SWS | 246 |
+| `order/{DD}/extend` | Alza → SWS | 8 |
+| `shipdep` → `shipment/{s}/departure` | Job SWS → middleware → Alza | 452 |
+| `delivr` → `order/{DD}/delivery` | Job SWS → middleware → Alza | 130 |
+| Cancel, Create / Delete shipment, Track and Trace | – | 0 |
+
+Příklad Delivery result (objednávka `DD26073359`, `POST https://trade-api.alza.cz/api/v1/order/DD26073359/delivery`, odpověď `200 {"errorCode":0,"errorMessage":""}`):
+
+```json
+{"supplierId":200,"supplierBranchId":235,"timestamp":"2026-11-16T08:34:08.169",
+ "status":"Canceled","statusTimestamp":"2026-11-16T08:26:03.170","errorReason":"poslední poškozený kus","paymentVS":"1520822927"}
+```
+
+Příklad Delivery result **Rejected** – balík se vrátil, zákazník ho nepřevzal (objednávka `DD25313597`). Job SWS volá middleware, middleware to předá Alze:
+
+```text
+POST /wsdrop-alza/sws1.ashx/delivr?order=DD25313597                       13:34:14.791  (job SWS → middleware)
+POST https://trade-api.alza.cz/api/v1/order/DD25313597/delivery          13:34:14.791  (middleware → Alza)
+200 {"errorCode":0,"errorMessage":""}                                    13:34:19.931  (Alza → middleware)
+```
+
+```json
+{"supplierId":200,"supplierBranchId":235,"timestamp":"2026-11-16T13:34:14.791",
+ "status":"Rejected","statusTimestamp":"2026-11-16T13:26:03.140",
+ "errorReason":"zakaznik neprevzal","paymentVS":"1515532933"}
+```
+
+`statusTimestamp` (13:26:03) je čas, kdy job SWS vratku vyhodnotil (`GETDATE()` v `SWSDropDeliveryResult`); zpráva odešla o 8 minut později. Dřívější zprávy této objednávky (Insert, Confirm, departure) jsou starší než dostupné logy (11.–17.11.2026).
+
+Příklad Availability `Update` (`POST https://trade-api.alza.cz/api/v1/availability`, 02:52:59, odpověď `200`):
+
+```json
+{"supplierId":200,"supplierBranchId":235,"timestamp":"2026-11-16T02:52:59.850","importType":"Update","currency":"CZK",
+ "productList":[{"code":"847010","ean":"0617885021244","quantity":78,"price":309.6,"vat":21,"priceWithFee":312.96,"fee":3.36}]}
+```
+
+SWS pořád používá **zastaralý** import `Full` a **starý cenový režim** (`price`, `priceWithFee`, `fee`, `vat`); Alza doporučuje `PartialFull` a `countryPrices`.
+
+
+### 9.17 Objednávky `DD26102128`, `DD26104004` a `DD26068181` v ERP i6
+
+Jak vypadají tři vyfocené objednávky z 9.16 v i6 po Confirm. Parametry jsou na záložce parametrů objednávky (uložení viz 9.4). Názvy parametrů jsou uvedené tak, jak jsou v i6, s anglickým popisem.
+
+**Čísla dokladů:**
+
+| Položka | `DD26102128` (AlzaBox, Linehaul) | `DD26104004` (pobočka Brno, Cross) | `DD26068181` (DPD, B2C) | Odkud se bere |
+|---|---|---|---|---|
+| Alza order number | `DD26102128` | `DD26104004` | `DD26068181` | `{order}` v URL → `Orders.OrdCodeO` |
+| i6 order number | `OP26189264` | `OP26189329` | `OP26188783` | `Orders.OrdCode`, vrací se jako `supplierOrder` |
+| i6 order id | `7033242` | `7033321` | `7032719` | `Orders.OrdId` – první část čísla zásilky |
+| Expedition id | `8792555` | `8792554` | `8792565` | `Expedition.ExpId` – druhá část čísla zásilky |
+| Shipment number | `7033242x8792555A` | `7033321x8792554B` | `7032719x8792565A` | Posílá se v Shipment departure (`A` = jedna objednávka, `B` = pobočka) |
+| Package number | `55002350085113` | `55002355016300` | `13825096178983` (DPD) | `Expedition.ExpCodeO` (DPD: `ExpCodeS`), čárový kód na štítku |
+| Invoice | `FV26163784` | `FV26163825` | – (nedodáno) | Faktura typ 73, vytvoří ji Confirm (na štítku číslo bez `FV`) |
+| Delivery note | `DV26226106` | `DV26226152` | – (nedodáno) | Odkaz v EDI faktuře (`RFF+DQ`); u dropshippingu se DESADV neposílá (9.18) |
+
+**Parametry objednávek (screenshoty z ERP i6, 16.11.2026):**
+
+| Parametr i6 | Popis (EN) | `DD26102128` | `DD26104004` | `DD26068181` | Pole API (Confirm order) | Uložení |
+|---|---|---|---|---|---|---|
+| `Rezervace` | Reservation type = dropship marker | – (není na screenshotu) | `Alza DropShipment` | `Alza DropShipment` | – (nastaví Insert) | `ConParSet` 434 / hodnota 3501 |
+| `Externí poznámka` | External note (processing state) | – (není na screenshotu) | `(2) Nezpracovaná` = *(2) Unprocessed* | – | – | (ověřit) |
+| `DropPackSortGroup` | Package sorting group | `Linehaul` (tiskové písmeno `L`) | `CrossLC` (tiskové písmeno `C`) | `RegularDirect` (bez písmena) | `packageSorting` | parametr `DPG` |
+| `RouteDeliveryOrder` | Route delivery order | `14` | – (pobočka nemá) | – | `route.routeDeliveryOrder` | parametr `DRO` |
+| `DropRouteName` | Route name | `SWS CZ01 -> CZTC1 -> OLD2 - Východní Čechy M 12` | `SWS CZ01 -> CZTC1 -> SKLC3 -> Brno` | `SWS CZ01` (jen odesílatel) | `route.routeName` | `ConParSet` 1186 |
+| `DropRouteStops` | Route stops (`branch\|ramp\|\|branch\|ramp`) | `CZTC1\|L17` | `CZTC1\|L01\|\|SKLC3\|L54` | – (DPD nemá zastávky) | `route.routeStops[]` | `ConParSet` 1187 |
+| `InvZCode` (*požadovaný kód B2C faktury*) | Requested B2C invoice code = payment variable symbol | `1521013923` | `1521022333` | `1520784885` (na štítku DPD jako *Vaše obj*) | `paymentVS` | `ConParSet` 888 |
+| `DropShipValue` | Shipment value (`value\|currency`) | `1074.00\|CZK` | `1504.00\|CZK` | `699.00\|CZK` | `shipmentValue` + měna | `ConParSet` 889 |
+| `DropCashDelivValue` | Cash on delivery (`value\|currency`) | `0.00\|CZK` | `0.00\|CZK` | `0.00\|CZK` | `cashOnDeliveryValue` + měna | `ConParSet` 890 |
+
+Parametry se ukládají jen tehdy, když je hodnota v Confirm vyplněná – proto DPD objednávka nemá zastávky ani pořadí doručení a objednávka na pobočku nemá pořadí doručení.
+
+`shipmentValue` je hodnota zboží pro koncového zákazníka (1 074 / 1 504 / 699 Kč). Faktura Alze (9.18) vychází z nákupní ceny: 847,58 / 1 146,26 Kč s DPH.
+
+### 9.18 EDI – faktura Alze (INVOIC)
+
+Trade API faktury nepřenáší. SWS fakturuje Alze zvlášť přes **EDI** – EANCOM **INVOIC D.01B (EAN011)** – přes EDI poskytovatele **EDIStore** (portál se sekcemi Orders, Despatch Adv, Invoices, Receiving Adv, Returns Ann, Interchanges, Order Rsp). Každá dropship objednávka má vlastní **fakturu** (`FV…`). Dodací list (`DV…`) je ve faktuře jen jako odkaz – **u dropshipping objednávek se DESADV neposílá** (DESADV se používá jen u standardních objednávek `OB…`, viz kapitola 2).
+
+```mermaid
+flowchart LR
+    A1["Alza - Trade API<br/>Insert / Confirm"] --> O["Objednávka i6 OP…"]
+    O --> C["Confirm: faktura FV…<br/>dodací list DV…"]
+    C --> E1["Jen EDI INVOIC<br/>(bez DESADV)"]
+    E1 --> S["EDIStore"]
+    S --> A2["Alza EDI"]
+    O --> X["Expedice<br/>balík 5500…"]
+    X --> D["Trade API<br/>Shipment departure"]
+    D --> A1
+```
+
+**Záznamy v EDIStore (Invoices):**
+
+| Pole | `DD26102128` | `DD26104004` |
+|---|---|---|
+| Status | `A` | `A` |
+| Invoice number | `FV26163784` | `FV26163825` |
+| DTS (DUZP) | 16.11.2026 | 16.11.2026 |
+| Supplier / Buyer | SWS a.s. / Alza.cz a.s. | SWS a.s. / Alza.cz a.s. |
+| Insert date | 16.11.2026 13:26:15 | 16.11.2026 13:26:16 |
+| Buyer's CIN (IČ odběratele) | `27082440` | `27082440` |
+| Issue date | 16.11.2026 | 16.11.2026 |
+| Document type | INVOICE | INVOICE |
+| Total | 847,58 Kč | 1 146,26 Kč |
+| Interchange number | `8307924` | `8307931` |
+| GLN delivery place | `8594177950111` | `8594177950111` |
+| Order number | `DD26102128` | `DD26104004` |
+| DESADV number (jen odkaz na dodací list) | `DV26226106` | `DV26226152` |
+
+Obě faktury odešly ve stejném běhu (UNB 16.11.2026 13:23) – dřív, než balíky fyzicky odjely (Shipment departure 15:00 / 15:06).
+
+**Struktura zprávy (segment po segmentu):**
+
+| Segment | `DD26102128` | `DD26104004` | Význam |
+|---|---|---|---|
+| `UNB` | ref. `8307924` | ref. `8307931` | Interchange `8594157000003` (SWS) → `8594177950005` (Alza), 16.11.2026 13:23; reference = číslo interchange v EDIStore |
+| `UNH` | `863491` | `863498` | Hlavička zprávy `INVOIC:D:01B:UN:EAN011` |
+| `USH`, `USA`, `USC` … `UST`, `USR` | | | Elektronický podpis, certifikát `0161CC0C` – *Jaroslav Tomášek* |
+| `BGM` | `FV26163784` | `FV26163825` | `380` obchodní faktura, `9` originál |
+| `DTM+137` / `+325` / `+35` | 20261116 | 20261116 | Datum dokladu / DUZP / datum dodání |
+| `PAI` | `::42` | `::42` | Platba převodem |
+| `FTX+AAI` | | | *Firma je zapsána v OR vedeném KS v Brně, odd. B, vl. 1773* |
+| `RFF+ON` | `DD26102128` | `DD26104004` | **Číslo objednávky odběratele = objednávka Alzy** |
+| `RFF+VN` | `OP26189264` | `OP26189329` | Číslo objednávky dodavatele (i6) |
+| `RFF+DQ` | `DV26226106` | `DV26226152` | Číslo dodacího listu – jen odkaz, u dropshippingu se DESADV neposílá |
+| `NAD+BY` | | | Odběratel `8594177950005` Alza.cz a.s., Jankovcova 1522/53, Praha – Holešovice, 17000; DIČ `CZ27082440`, IČ `27082440` |
+| `NAD+DP` | | | Místo dodání `8594177950111` – stejný GLN, který i6 zapisuje do `ComShipTo.CstId3` (9.3) |
+| `NAD+IV` | | | Příjemce faktury `8594177950005` |
+| `NAD+SU` | | | Dodavatel `8594157000003` SWS a.s., Dostihová 1, Slušovice, 763 15; DIČ `CZ699000207`, IČ `63485826` |
+| `FII+RB` | VS `26163784` | VS `26163825` | Účet `1000490200/3500`, ING `INGBCZPP`, IBAN `CZ8435000000001000490200` |
+| `NAD+SF` | | | Místo odeslání `8594157000003` |
+| `CUX` | `CZK` | `CZK` | Měna |
+| `PAT` + `DTM+13` | 15.01.2027 | 15.01.2027 | Datum splatnosti |
+| `LIN 1` | EAN `0191200521539`, `653979` *Lenovo adaptér ThinkPad 65W AC USB-C Standard*, 1 ks | EAN `5397184820964`, `241837` *Dell Multimediální klávesnice KB216 – čeština/slovenština (QWERTZ)*, 4 ks | Položka |
+| `PRI+AAB` | 699,72 | 235,57 | Jednotková cena = nákupní cena Alzy z Insert (`purchasePriceWithoutFees`) |
+| `ALC` + `MOA+8` | 0,76 | 5,04 (4 × 1,26) | Recyklační poplatek (*RECYKLACNI POPLATEK*) |
+| `PRI+AAA` / `MOA+203` | 700,48 / 700,48 | 236,83 / 947,32 | Jednotková cena s poplatkem / částka řádku, DPH 21 % |
+| `LIN 2` | `DROPSHIPKOREKCE`, 1 ks, 0,00, DPH 0 % | – | Korekční položka, kterou Confirm přidává **jen u objednávek mimo pobočky** (9.3) – fakturuje se s nulovou hodnotou |
+| `CNT+2` | 2 | 1 | Počet řádků |
+| `MOA+79` / `+125` | 700,48 | 947,32 | Součet řádků / základ daně |
+| `MOA+176` / `+124` | 147,10 | 198,94 | DPH (21 %) |
+| `MOA+86` / `+9` | **847,58** | **1 146,26** | Celkem faktura / k úhradě |
+| `UNT` | 73 segmentů | 62 segmentů | Konec zprávy |
+| `UNZ` | `8307924` | `8307931` | Konec interchange |
+
+#### Kompletní zpráva – `DD26102128` (FV26163784)
+
+```text
+UNB+UNOD:3+8594157000003:14+8594177950005:14+261116:1323+8307924++INVOIC+++EANCOM'
+UNH+863491+INVOIC:D:01B:UN:EAN011'
+USH+94W+1+01+1+1+2+2+1+++863491+1:20261116:132333'
+USA+1:0:1:48:1'
+USC+0161CC0C+3:Jaroslav Tomášek:8594157000003'
+BGM+380+FV26163784+9'
+DTM+137:20261116:102'
+DTM+325:20261116:102'
+DTM+35:20261116:102'
+PAI+::42'
+FTX+AAI+++Firma je zapsána v OR vedeném KS v Brne, odd.B, vl.1773'
+RFF+ON:DD26102128'
+DTM+171:20261116:102'
+RFF+VN:OP26189264'
+RFF+DQ:DV26226106'
+DTM+171:20261116:102'
+NAD+BY+8594177950005::9++Alza.cz a.s.+Jankovcova 1522/53+Praha - Holešovice++17000+CZ'
+RFF+VA:CZ27082440'
+RFF+GN:27082440'
+NAD+DP+8594177950111::9+++++++CZ'
+NAD+IV+8594177950005::9'
+NAD+SU+8594157000003::9++SWS a.s.+Dostihová 1+Slušovice++763 15+CZ'
+FII+RB+1000490200:0008:26163784+3500:::INGBCZPP::::CZ8435000000001000490200'
+RFF+VA:CZ699000207'
+RFF+GN:63485826'
+NAD+SF+8594157000003::9'
+CUX+2:CZK:4'
+PAT+3'
+DTM+13:20270115:102'
+LIN+1++0191200521539:SRV::9'
+PIA+1+653979:SA'
+IMD+F++:::Z'
+IMD+E+ANM+:::Lenovo adaptér ThinkPad 65W AC USB-C Standard'
+QTY+47:1:PCE'
+MOA+203:700.48'
+PRI+AAB:699.72'
+PRI+AAA:700.48'
+RFF+ON:DD26102128'
+RFF+DQ:DV26226106'
+TAX+7+VAT+++:::21'
+ALC+C+RECYKLACNI POPLATEK++1+AEO'
+MOA+8:0.76'
+LIN+2++:SRV::9'
+PIA+1+DROPSHIPKOREKCE:SA'
+IMD+F++:::S'
+IMD+E+ANM+:::Korekce celkové cástky pro DropShip/WS obj'
+QTY+47:1:PCE'
+MOA+203:0'
+PRI+AAB:0'
+PRI+AAA:0'
+RFF+ON:DD26102128'
+RFF+DQ:DV26226106'
+TAX+7+VAT+++:::0'
+UNS+S'
+CNT+2:2'
+MOA+86:847.58'
+MOA+79:700.48'
+MOA+125:700.48'
+MOA+74:0'
+RFF+ZZZ:0'
+MOA+113:0'
+MOA+176:147.1'
+MOA+9:847.58'
+MOA+165:0'
+TAX+7+VAT+++0:::0'
+MOA+125:0'
+TAX+7+VAT+++2:::21'
+MOA+125:700.48'
+MOA+124:147.1'
+TAX+7+EXC'
+MOA+176:0'
+UST+01'
+USR+20D229AA3E847D1C8B9232E1ADB8858B1A775B267F29798A2F61CDCC4812719925ECF56915572A96E736F2EC2AC17CBA6600996BDB464EF93F7653B2635B 173D89BF1DF7052DC1A73CBB75CA4A3F35C5B7A14BA5C5E14D6E97728F479432239E83BC13AE34E8B51480443A0CF6E3181583D841530D614CBAA7FCCA7E4258 6F778740A8548D911CE3B62E6CB9DF0F57E013476887DDF2F10AC139958ECA5A490AC7736FC286AA31E57CF7C76D93037DE2282A8BADC99DB6513A86523DFB99 AA16AD057808AD5D91E8B104003747A883893E36119AB80F950AC11C1F477CB8EA93E268F781B3F002BAC66DD0458F1C3C631290991945100E5F99ED2F62AE7C 12C350B5A57D2105033AFF09076CD7721179D415C0097B1A9081B44AED22CA675BD0F1875D649C77D7957E5631349CE46D13453CD55FAE18737B08CC5A5D1D81 EE127080C45C927AAD04C855C40C9F5E8C504297160DB7603082EB00E51A7E8DA1A5C535C8B6A47CEECC312B42769145C224D70B1CA6C670D1F16DE85C5B0ABF 9E2F054EFFB446F23D87C2ADF1C4C9376F788E6D0A2C2904DE956219013B815BAC820E00835D09205A002A0687DC57B357B1FD9BB0800CF4CEB9F19F08FF61AA 46D122BFCDF871CBD4F5C4AA0C67ECBB1B43891A8F5D2FAA7E732F4FCC94516A34B42C43030AAFB6801446AE9E49AB1F51DDC30805AD2A96F4BE5DF21CB7FDD4 F547'
+UNT+73+863491'
+UNZ+1+8307924'
+```
+
+#### Kompletní zpráva – `DD26104004` (FV26163825)
+
+```text
+UNB+UNOD:3+8594157000003:14+8594177950005:14+261116:1323+8307931++INVOIC+++EANCOM'
+UNH+863498+INVOIC:D:01B:UN:EAN011'
+USH+94W+1+01+1+1+2+2+1+++863498+1:20261116:132335'
+USA+1:0:1:48:1'
+USC+0161CC0C+3:Jaroslav Tomášek:8594157000003'
+BGM+380+FV26163825+9'
+DTM+137:20261116:102'
+DTM+325:20261116:102'
+DTM+35:20261116:102'
+PAI+::42'
+FTX+AAI+++Firma je zapsána v OR vedeném KS v Brne, odd.B, vl.1773'
+RFF+ON:DD26104004'
+DTM+171:20261116:102'
+RFF+VN:OP26189329'
+RFF+DQ:DV26226152'
+DTM+171:20261116:102'
+NAD+BY+8594177950005::9++Alza.cz a.s.+Jankovcova 1522/53+Praha - Holešovice++17000+CZ'
+RFF+VA:CZ27082440'
+RFF+GN:27082440'
+NAD+DP+8594177950111::9+++++++CZ'
+NAD+IV+8594177950005::9'
+NAD+SU+8594157000003::9++SWS a.s.+Dostihová 1+Slušovice++763 15+CZ'
+FII+RB+1000490200:0008:26163825+3500:::INGBCZPP::::CZ8435000000001000490200'
+RFF+VA:CZ699000207'
+RFF+GN:63485826'
+NAD+SF+8594157000003::9'
+CUX+2:CZK:4'
+PAT+3'
+DTM+13:20270115:102'
+LIN+1++5397184820964:SRV::9'
+PIA+1+241837:SA'
+IMD+F++:::Z'
+IMD+E+ANM+:::Dell Multimediální klávesnice KB216 - ceština/slovenština (QWERTZ) - c'
+QTY+47:4:PCE'
+MOA+203:947.32'
+PRI+AAB:235.57'
+PRI+AAA:236.83'
+RFF+ON:DD26104004'
+RFF+DQ:DV26226152'
+TAX+7+VAT+++:::21'
+ALC+C+RECYKLACNI POPLATEK++1+AEO'
+MOA+8:5.04'
+UNS+S'
+CNT+2:1'
+MOA+86:1146.26'
+MOA+79:947.32'
+MOA+125:947.32'
+MOA+74:0'
+RFF+ZZZ:0'
+MOA+113:0'
+MOA+176:198.94'
+MOA+9:1146.26'
+MOA+165:0'
+TAX+7+VAT+++0:::0'
+MOA+125:0'
+TAX+7+VAT+++2:::21'
+MOA+125:947.32'
+MOA+124:198.94'
+TAX+7+EXC'
+MOA+176:0'
+UST+01'
+USR+787E9F8248F512912D9D69DFE94FED9FF94841AC429ACD6F10BDABF2E2B2A1235BED6E3E0DA654D815F9DA5B2F60ACE8E593B82A831AAB29C5A126E8FF98 9C74F6893ABE088708CF540B1CB5A6DEB769A933BC0FACFE777B3A96C061F65A97063CD5C3C40B88F1EE94663E71F685782E44B5A7A983F5ED7B62D7D7BF30F9 0964CD0F88F4CD8C772E27B8CDD8BACB73257C64B8AF891130B5F7B82596580ADA1639CB59991DB033567AA92873ACBD857B8B4D8FBF78F4C7A87AE3C70B8E56 286ADC8ACDD449975A8FD6C9B5F20BA2764216ACA7E93337DC7705210946154AFBC685B9B636C92492B7BB504D5A6E263941BAD4A3D8F0F13A076E8B80DE194D 05FA51A04FFA8CC4475A69526BEF08C859329239C379F76595AC9E643F8A86B714C0210E56A83A34C5E1D21199EEE7D290A03311DE75D782ACE099257D938D94 29D2A79C003A290C37D3CD1E8C73AA6A6B4959C230F15A03EE396CCD2E74F216778C38645895A7E5E29BAA9D479A73BF4CC1E8CD8F3F3E4EB4918782B2DED40A 985C9A7A59F01E50ADD1F86A57D535915E3AD7EE0C0998A1679E1E54FE35632B33B66E1F1AF34962E10D69C6E861D841B8FB11EDC4561547544A718E6B6BBFCE DEFB56C3BEBC14C3FCADEBC5B662336E271EAD91F31EF794F4B73A112E4AF4773F3FA246A98652AEC156A19FB8B1A9E7349BFB4FF701172D567572FD53383F52 A34A'
+UNT+62+863498'
+UNZ+1+8307931'
+```
+
+### 9.19 EDI – standardní objednávka `OB26238498` (ORDERS)
+
+Pro srovnání s dropshippingem: běžná nákupní objednávka Alzy, která přichází přes **EDI ORDERS** (EANCOM **ORDERS D.01B, EAN010**) přes EDIStore (viz kapitola 2). SWS na ni odpovídá zprávami DESADV a INVOIC – jejich ukázky se ještě doplní (otevřený bod 15).
+
+**Shrnutí:**
+
+| Položka | Hodnota |
+|---|---|
+| Číslo objednávky | `OB26238498` |
+| Datum objednávky | 16.11.2026 |
+| Požadované datum dodání | 23.11.2026 |
+| Přijato | 17.11.2026 14:59 (interchange `661313343`) |
+| Odběratel | Alza.cz a.s., GLN `8594177950005`, nákupčí Lukáš Plško |
+| Místo dodání | **Alza.cz CZLC4**, Severní 255, 252 19 Chrášťany, GLN `8594177950173` – sklad Alzy (stejné `CZLC4` jako v trasách Trade API) |
+| Dodavatel | SWS a.s., GLN `8594157000003` |
+| Řádky | 4 řádky, 20 ks, informativní cena 191 Kč / ks (3 820 Kč) |
+
+**Struktura zprávy (segment po segmentu):**
+
+| Segment | Obsah | Význam |
+|---|---|---|
+| `UNB` | `8594177950005` → `8594157000003`, 17.11.2026 14:59, ref. `661313343`, `ORDERS` | Interchange od Alzy do SWS |
+| `UNH` | `588704362`, `ORDERS:D:01B:UN:EAN010` | Hlavička zprávy |
+| `BGM` | `220`, `OB26238498`, `9` | Objednávka, číslo, originál |
+| `DTM+137` | 20261116 | Datum objednávky |
+| `DTM+2` | 20261123 | Požadované datum dodání |
+| `FTX+PUR` | *AOR, Fujifilm INSTAX - PLu, AOSOD621686, Lukáš Plško* | Poznámka nákupu (kategorie / nákupčí / interní reference) |
+| `NAD+BY` + `RFF+VA` / `RFF+GN` | `8594177950005` Alza.cz a.s., Jankovcova 1522/53, Praha 7, 17000; DIČ `CZ27082440`, IČ `27082440` | Odběratel |
+| `CTA+OC` + `COM` | *Sales and Purcha: Lukáš Plško*, `+420778766749`, `Lukas.Plsko@alza.cz` | Kontakt odběratele (`?+` = escapované `+`) |
+| `NAD+DP` | `8594177950173` Alza.cz CZLC4, Severní 255, Chrášťany, 25219, CZ | **Místo dodání – sklad Alzy** |
+| `CTA+OC` + `COM` | *Sklad: Kontakt*, `+420 778 957 526`, `expedice.chrastany@alza.cz` | Kontakt na sklad |
+| `NAD+IV` | `8594177950005` Alza.cz a.s. | Příjemce faktury |
+| `NAD+SU` + `RFF` | `8594157000003` SWS a.s., Dostihová 1, Slušovice, 76315; DIČ `CZ699000207`, IČ `63485826` | Dodavatel |
+| `CTA+OC` + `COM` | *Sklad: Kontakt*, `+420577640111`, `region4@sws.cz` | Kontakt na sklad dodavatele |
+| `NAD+OB` | `8594177950005` | Objednal |
+| `CUX` | `CZK` (`9` = měna objednávky) | Měna |
+| `LIN` | EAN | Řádek, zboží určené EAN |
+| `PIA+5 …:SA` | např. `FJF00124` | **Číslo zboží dodavatele = kód produktu SWS** (stejný typ kódu jako `code` v Trade API) |
+| `PIA+5 …:IN` | např. `OF245a13a13` | Číslo zboží odběratele (Alzy) |
+| `IMD+E` | Název produktu | Popis |
+| `QTY+21` | např. 7 PCE | Objednané množství |
+| `DTM+2` | 20261123 | Požadované datum dodání řádku |
+| `PRI+INF` | 191 | Informativní cena za kus |
+| `UNS`, `UNT`, `UNZ` | 54 segmentů, `661313343` | Oddělovač, konec zprávy / interchange |
+
+**Řádky objednávky:**
+
+| # | EAN | Kód SWS (`SA`) | Kód Alzy (`IN`) | Produkt | Množství | Cena |
+|---|---|---|---|---|---|---|
+| 1 | `8720094754659` | `FJF00124` | `OF245a13a13` | Fotoalbum Fujifilm instax mini 13 PHOTO ALBUM – Candy Pink | 7 | 191 |
+| 2 | `8720094754642` | `FJF00123` | `OF245a13a12` | Fotoalbum Fujifilm instax mini 13 PHOTO ALBUM – Lagoon Green | 3 | 191 |
+| 3 | `8720094754666` | `FJF00125` | `OF245a13a14` | Fotoalbum Fujifilm instax mini 13 PHOTO ALBUM – Dreamy Purple | 5 | 191 |
+| 4 | `8720094754673` | `FJF00126` | `OF245a13a15` | Fotoalbum Fujifilm instax mini 13 PHOTO ALBUM – Clay White | 5 | 191 |
+
+**Rozdíly proti dropshipping objednávce:**
+
+| | `OB…` (EDI ORDERS) | `DD…` (Trade API) |
+|---|---|---|
+| Kam se dodává | Sklad Alzy (`NAD+DP`, zde CZLC4 Chrášťany, GLN `8594177950173`) | Koncový zákazník, AlzaBox nebo pobočka Alzy (`deliveryAddress`) |
+| Rezervace / zrušení / prodloužení | – | Insert, Extend, Cancel |
+| Pokyn k expedici | Jen požadované datum dodání (`DTM+2`) | Confirm: dopravce, trasa, třídění, čas odjezdu |
+| Identifikace zboží | EAN + kód SWS + kód Alzy | `code` SWS + `orderItemId` Alzy |
+| Cena | Informativní cena (`PRI+INF`) | Nákupní cena z Availability (`purchasePriceWithoutFees`) |
+| Odpověď Alze | DESADV + INVOIC (EDI) | Shipment departure, Delivery result (Trade API) + INVOIC (EDI) |
+| GLN místa dodání na faktuře | Sklad Alzy | `8594177950111` (9.18) |
+
+Kompletní zpráva:
+
+```text
+UNB+UNOD:3+8594177950005:14+8594157000003:14+261117:1459+661313343++ORDERS+++EANCOM'
+UNH+588704362+ORDERS:D:01B:UN:EAN010'
+BGM+220+OB26238498+9'
+DTM+137:20261116:102'
+DTM+2:20261123:102'
+FTX+PUR+++AOR, Fujifilm INSTAX - PLu, AOSOD621686, Lukáš Plško '
+NAD+BY+8594177950005::9++Alza.cz a.s.+Jankovcova 1522/53+Praha 7++17000'
+RFF+VA:CZ27082440'
+RFF+GN:27082440'
+CTA+OC+Sales and Purcha:Lukáš Plško'
+COM+?+420778766749:TE'
+COM+Lukas.Plsko@alza.cz:EM'
+NAD+DP+8594177950173::9++Alza.cz CZLC4+Severní 255+Chrášťany++25219+CZ'
+CTA+OC+Sklad:Kontakt'
+COM+?+420 778 957 526:TE'
+COM+expedice.chrastany@alza.cz:EM'
+NAD+IV+8594177950005::9++Alza.cz a.s.'
+NAD+SU+8594157000003::9++SWS a.s.+Dostihová 1+Slušovice++76315'
+RFF+VA:CZ699000207'
+RFF+GN:63485826'
+CTA+OC+Sklad:Kontakt'
+COM+?+420577640111:TE'
+COM+region4@sws.cz:EM'
+NAD+OB+8594177950005::9'
+CUX+2:CZK:9'
+LIN+1++8720094754659:SRV'
+PIA+5+FJF00124:SA'
+PIA+5+OF245a13a13:IN'
+IMD+E+ANM::9+:::Fotoalbum Fujifilm instax mini 13 PHOTO ALBUM – Candy Pink'
+QTY+21:7:PCE'
+DTM+2:20261123:102'
+PRI+INF:191'
+LIN+2++8720094754642:SRV'
+PIA+5+FJF00123:SA'
+PIA+5+OF245a13a12:IN'
+IMD+E+ANM::9+:::Fotoalbum Fujifilm instax mini 13 PHOTO ALBUM – Lagoon Green'
+QTY+21:3:PCE'
+DTM+2:20261123:102'
+PRI+INF:191'
+LIN+3++8720094754666:SRV'
+PIA+5+FJF00125:SA'
+PIA+5+OF245a13a14:IN'
+IMD+E+ANM::9+:::Fotoalbum Fujifilm instax mini 13 PHOTO ALBUM – Dreamy Purple'
+QTY+21:5:PCE'
+DTM+2:20261123:102'
+PRI+INF:191'
+LIN+4++8720094754673:SRV'
+PIA+5+FJF00126:SA'
+PIA+5+OF245a13a15:IN'
+IMD+E+ANM::9+:::Fotoalbum Fujifilm instax mini 13 PHOTO ALBUM – Clay White'
+QTY+21:5:PCE'
+DTM+2:20261123:102'
+PRI+INF:191'
+UNS+S'
+UNT+54+588704362'
+UNZ+1+661313343'
+```
+
+
+### 9.20 Veškerá komunikace v logech (11.–17.11.2026)
+
+Úplný průchod logy middleware `msg_20261111.jsonl` … `msg_20261117.jsonl` (≈ 1,26 milionu řádků). Kapitola uvádí **každý typ zprávy, který se vyskytl**, všechny odpovědi, které se objevily, a nalezené incidenty a zvláštnosti.
+
+**Pokrytí logů:**
+
+| Soubor | Období | Řádků | Poznámka |
+|---|---|---|---|
+| `msg_20261111.jsonl` | 11.11. 07:46 – 13:28 | 1 360 | Logování začalo 11.11.; po 13:28 nic |
+| `msg_20261112.jsonl` | 12.11. 00:00 – 23:58 | 209 911 | |
+| `msg_20261113.jsonl` | 13.11. 00:06 – 23:59 | 215 468 | |
+| `msg_20261114.jsonl` | 14.11. 00:06 – 23:59 | 404 612 | Většinou dotazování `alzaavail` |
+| `msg_20261115.jsonl` | 15.11. 00:00 – 20:06 | 242 897 | Log končí ve 20:06 – poslední požadavek (Cancel `DD26074147`) nemá odpověď |
+| `msg_20261116.jsonl` | 16.11. 00:06 – 23:56 | 78 268 | |
+| `msg_20261117.jsonl` | 17.11. 00:00 – 21:09 | 105 030 | |
+
+#### Katalog všech typů zpráv
+
+| # | Zpráva | Směr | Endpoint | Počet | Zjištěné odpovědi |
+|---|---|---|---|---|---|
+| 1 | Insert order | A→S | `POST sws1.ashx/order/{DD}` | 1 799 | `200` / `0` (1 134); `400` / `-3` *Out of stock* (32); `500` SQL timeout / deadlock (499); **bez odpovědi** (134) |
+| 2 | Confirm order | A→S | `POST sws1.ashx/order/{DD}/confirm` | 1 846 | `200` / `0` (1 078, z toho *previous confirm ended with some error* 2×, *attempt confirm expired reservation* 1×); `400` / `-5` *Delivery Address Error – Bad Post Code* (327); `400` / `-1` *Previous request still running* (177); `500` (249); bez odpovědi (15) |
+| 3 | Extend order | A→S | `POST sws1.ashx/order/{DD}/extend` | 44 | `200` / `0` + `validUntil` (16); `400` / `-5` *only once extend is allowed* (24); `500` deadlock (4) |
+| 4 | Cancel order | A→S | `DELETE sws1.ashx/order/{DD}` | 90 | `200` / `0` (70); `400` / `-5` *Order was sent* (19); bez odpovědi (1) |
+| 5 | Shipment departure | S→A | job → `sws1.ashx/shipdep` → `trade-api…/shipment/{s}/departure` | 1 116 | `200` (1 098); `400` / `-2` *Unexpected high quantity.* (7); `400` / `-2` *Serial number … is with the customer. Cannot be reused!* (1); `500` / `-1` *Internal SQL Server error. Please resend…* (na straně Alzy, 6); `403` HTML stránka (1); `520`, `525` Cloudflare (1 + 1); síťová chyba (1) |
+| 6 | Delivery result | S→A | job → `sws1.ashx/delivr` → `trade-api…/order/{DD}/delivery` | 210 | `200` (87); `400` / `-5` *Can't reject delivered order!* (61); `400` / `-5` *Can´t rejected claimed order!. Contact AlzaTrade support!* (55); `400` / `-5` *Invalid order state for delivery result!* (7) |
+| 7 | Availability | S→A | middleware → `trade-api…/availability` | 25 | `200` / `0` (všechny) |
+| 8 | `alzaavail` (interní spouštěč) | job → middleware | `GET sws1.ashx/alzaavail?type=0/1/2` | 622 392 | `200` *{nic k aktualizaci}* nebo se odešle dostupnost (řádek 7) |
+| – | Create shipment, Delete shipment, Track and Trace | – | – | **0** | SWS je nepoužívá |
+| – | Chybové kódy `-4`, `-6`, `-7`, HTTP `429` | – | – | **0** | Nikdy se nevyskytly |
+
+**Odchylky HTTP statusů SWS (middleware) od pravidel API:** úspěšný Insert dostane `200` (API čeká `201`); `-3` *Out of stock* se vrací s `400` (API preferuje `200`, přijme obojí); chyby SQL se vrací jako `500` se surovým textem chyby SQL – Alza je bere jako „nedoručeno“ a posílá znovu.
+
+#### Varianty Confirm order v logu (1 070 různých objednávek)
+
+| Dopravce / typ doručení | `shipmentDeliveryType` | Objednávek | Z toho SK |
+|---|---|---|---|
+| `ALZA` / `ALZABOX` | `ParcelShop` | 813 | 192 |
+| `DPD` / `DPD` | `B2B` | 100 | 23 |
+| `ALZA` / `Supplier` (→ `ALZABRANCH`) | `Branch` | 90 | 18 |
+| `DPD` / `DPD` | `B2C` | 53 | 8 |
+| `GebruderWeiss` / `GebruderWeissStandard` | `B2B` | 7 | 4 |
+| `GebruderWeiss` / `GebruderWeissStandard` | `B2C` | 4 | 3 |
+| `ZASILKOVNA` / `ZASILKOVNA` | `ParcelShop` | 3 | – |
+
+- **Země:** CZ 822, **SK 248**. U SK je měna dobírky `EUR`, ale `shipmentValue` zůstává v `CZK`.
+- **Třídění balíků:** `CrossLC` 471, `RegularDirect` 415, `Linehaul` 184.
+- **Dobírka > 0:** 12 objednávek, všechny DPD (např. 747 Kč).
+- **Volitelná pole:** `shipmentExternalOrderNumber` v 451 Confirmech (hlavně DPD) – **SWS ho neukládá**; poznámka k doručení `note` 422; `routeDeliveryOrder` 969; `deliveryBranchId` 188. `shipmentDeliveryServices`, `glnList`, `buyerAddress`, `shipmentDeliveryAddress`, `taxNo` se nevyskytly.
+- **Insert order:** `serialNumbersRequired = true` 51×, `serialNumbersExpected = true` 388×, `alzaBarCodes` 167×, víc než jedna položka 229×, `fees` nikdy.
+
+#### Dopravci a případy, které ještě nebyly ukázané
+
+Gebrüder Weiss – objednávka `DD25870226` (SK, B2B). Confirm (zkráceno):
+
+```json
+{"shippingCarrier":{"shippingCarrierCode":"GebruderWeiss","shippingCarrierDeliveryType":"GebruderWeissStandard"},
+ "route":{"routeName":"SWS CZ01"},"shipmentDeliveryType":"B2B","shipmentShippingMode":"Supplier",
+ "cashOnDeliveryValue":0.0,"cashOnDeliveryValueCurrency":"EUR","packageSorting":{"packageSortingGroup":"RegularDirect"},
+ "shipmentDepartureTime":"2026-11-13T23:30:00.000","paymentVS":"1519359662",
+ "deliveryAddress":{"companyName":"Súkromná základná umelecká škola","addressName":"Peter Vrbinčík","streetWithNumber":"Zohorská 980/33",
+                    "city":"Lozorno","phone":"+421905961824","email":"liana.spodniakova@gmail.com","country":"SK","zip":"90055"},
+ "shipmentValue":1288.0,"shipmentValueCurrency":"CZK"}
+```
+
+Shipment departure `7027656x8791106A` – číslo balíku `695002530001001` (Gebrüder Weiss), 7 kg:
+
+```json
+{"shippingCarrier":{"shippingCarrierCode":"GebruderWeiss","shippingCarrierDeliveryType":"GebruderWeissStandard"},
+ "cashOnDeliveryValue":0.0,"cashOnDeliveryValueCurrency":"EUR","shipmentValue":1288.0,"shipmentValueCurrency":"CZK","shipmentWeight":7.0,
+ "packages":[{"number":"695002530001001","weight":7.0,"fullNumber":"695002530001001"}],
+ "items":[{"order":"DD25870226","packageNumber":"695002530001001","quantity":1,"orderItemId":3686380734,"code":"573621"}]}
+```
+
+Zásilkovna – objednávka `DD25983556`. Confirm obsahuje výdejní místo `9116` a `shipmentExternalOrderNumber`:
+
+```json
+{"shippingCarrier":{"shippingCarrierCode":"ZASILKOVNA","shippingCarrierDeliveryType":"ZASILKOVNA"},
+ "parcelShop":{"parcelShopIdentification":"ZASILKOVNA","parcelShopBranchCode":"9116"},
+ "route":{"routeName":"SWS CZ01"},"shipmentDeliveryType":"ParcelShop","packageSorting":{"packageSortingGroup":"RegularDirect"},
+ "paymentVS":"1520311217","shipmentExternalOrderNumber":"202690-SM0329",
+ "deliveryAddress":{"companyName":"Nábytek Šubrt","addressName":"MILETA A.S.","streetWithNumber":"Husova 161","city":"Hořice",
+                    "phone":"+420735793946","email":"simona.mackova@mileta.cz","country":"CZ","zip":"50801","note":"C50-166-9116"},
+ "shipmentValue":1569.0,"shipmentValueCurrency":"CZK"}
+```
+
+Departure `7031630x8791512A` – `number` = čárový kód Zásilkovny bez úvodního `Z`, `fullNumber` = celý kód (9.6), se sériovým číslem:
+
+```json
+{"packages":[{"number":"3670903756","weight":0.4,"fullNumber":"Z3670903756"}],
+ "items":[{"order":"DD25983556","packageNumber":"3670903756","quantity":1,"orderItemId":3695646734,"code":"AVC00021","serials":["5073744"]}]}
+```
+
+Dobírka (DPD, B2C) – objednávka `DD26035169`: dobírka **747 Kč** je vyšší než `shipmentValue` **609 Kč** (dobírka obsahuje i dopravné). `fullNumber` DPD obsahuje službu `329` (dobírka) místo `327`:
+
+```json
+{"shippingCarrier":{"shippingCarrierCode":"DPD","shippingCarrierDeliveryType":"DPD"},
+ "cashOnDeliveryValue":747.0,"cashOnDeliveryValueCurrency":"CZK","shipmentValue":609.0,"shipmentValueCurrency":"CZK","shipmentWeight":0.4,
+ "packages":[{"number":"13825096222491","weight":0.4,"fullNumber":"%004712413825096222491329203"}],
+ "items":[{"order":"DD26035169","packageNumber":"13825096222491","quantity":1,"orderItemId":3700110005,"code":"847010"}]}
+```
+
+Extend order – Alza žádá prodloužení do dalšího dne 12:00 (`{"…","validUntil":"2026-11-12T12:00:00.000"}`); SWS ho povolí jednou, druhý Extend dostane `-5 only once extend is allowed` a Alza objednávku zruší. Out of stock u Insert: `400 {"errorCode":-3,"errorMessage":"Out of stock","errorProducts":[{"code":"765997","quantity":0}]}`.
+
+#### Incidenty a zvláštnosti
+
+**1. Smyčka kvůli chybnému PSČ – objednávka `DD25761075`** (SK, B2B, DPD, `"zip":"91930@"`). Confirm byl odmítán s `-5 Delivery Address Error – Bad Post Code` zhruba každých 5 minut déle než 33 hodin (327×). Mezitím vypršela rezervace a job posílal každých 30 minut Delivery result `Canceled` / `expired reservation` – Alza ho odmítla s `-5 Invalid order state for delivery result!` (7×). 13.11. v 09:13 SWS na Confirm odpověděl `0 attempt confirm expired reservation`. Oprava v `SWSDropShipOrder` (komentář *13.11.26 – odstranit `@` z PSČ*) vznikla kvůli tomuto případu.
+
+**2. Smyčky Delivery result, které Alza odmítá.** Middleware vrací jobu `500`, takže se nikdy nenastaví `!DDR!` a job posílá zprávu každých 30 minut **pořád dokola**:
+
+| Objednávka | Odesláno | Odpověď Alzy | Pokusů |
+|---|---|---|---|
+| `DD25388394` | `Rejected` / `zakaznik neprevzal` | `-5 Can't reject delivered order!` | 61 (16.11. 09:34 → 17.11. 21:03, stále běží) |
+| `DD25651998` | `Rejected` / `zakaznik neprevzal` | `-5 Can´t rejected claimed order!. Contact AlzaTrade support!` | 55 (16.11. 12:34 → 17.11. 21:03, stále běží) |
+| `DD25761075` | `Canceled` / `expired reservation` | `-5 Invalid order state for delivery result!` | 7 |
+
+**3. Konsolidovaná zásilka na pobočku odeslaná víckrát.** Expedice `8792458` obsahovala 3 objednávky. `SWSDropShipmentDeparture` vytvořil zásilku `B` **za každou objednávku** (`7032604x8792458B`, `7032664x8792458B`, `7032749x8792458B`), každou s položkami všech tří objednávek. Alza přijala první a ostatní odmítla s `-2 Unexpected high quantity.` Stejný případ 11.11. (expedice `8788980`, 4×). Příčina: větev `B` v proceduře seskupuje i podle `OrdId`. Neškodí to (první zásilka je správná), ale nemělo by se to přebírat.
+
+**4. Znovu použité sériové číslo.** 12.11. Alza odmítla departure `7030476x8790416A`: *Serial number "1700000175" is with the customer. Cannot be reused! (objednávka DD25954272, kód TPL00100)*.
+
+**5. Chyby na straně Alzy.** Departure dostal od Alzy `500` *Internal SQL Server error. Please resend the message according to the documentation.* (6×, typicky kolem 20:17), stránku `403` (WAF), Cloudflare `520` / `525` a jednu síťovou chybu. Job je později poslal znovu.
+
+**6. HMAC token v logu.** Při síťové chybě zapíše middleware do logu celou URL Alzy včetně `?token=…` (zde začerněno). Logy tedy obsahují autentizační údaje a musí se chránit.
+
+**7. Zjištěné intervaly opakování:** Alza posílá Confirm znovu zhruba po 5 minutách, job SWS posílá Delivery result znovu po 30 minutách.
+
 ---
 
 ## 10. Chyby, opakování, timeouty
@@ -951,7 +1832,7 @@ Max. **5 paralelních požadavků** stejného typu od jednoho dodavatele.
 
 | # | Co | Proč / kam to patří | Kdo |
 |---|---|---|---|
-| 1 | Middleware `wsdrop-alza` (`sws1.ashx`) – zdrojový kód nebo popis: JSON ⇄ XML, HMAC token, která procedura pro který endpoint, odesílání odchozích zpráv, opakování, kde se nastavuje `!DSD!` / `!DDR!` | 9.1 – jediná část řetězce, která ještě není popsaná | SWS |
+| 1 | Middleware `wsdrop-alza` (`sws1.ashx`) – zdrojový kód nebo popis: JSON ⇄ XML, HMAC token, která procedura pro který endpoint, odesílání odchozích zpráv, opakování, kde se nastavuje `!DSD!` / `!DDR!` | 9.1 – jediná část řetězce, která ještě není popsaná; projekt `SWS-WSDropa` (sws1.ashx, sws-wsdrop.cs, MsgLog.cs) je dohledaný a můžu ho zpracovat | SWS |
 | 2 | Plánování – SQL Agent joby / úlohy, které spouští departure, delivery result, souhrnnou fakturu a dostupnost, a jak často | 9.6, 9.7, 9.9, 9.10 | SWS |
 | 3 | Dostupnost – procedura, která plní `SWSAlzaDropAvailLog1` (výpočet skladu a ceny), skládání zprávy, význam `LSndStatus`, časování Update / PartialFull | 9.9 | SWS |
 | 4 | Pomocné objekty – `dbo.SWSGetWarSerialNoForOrderAndExpedition`, `dbo.SWSRemoveXMLTag`, `SWSSetConParSet`, `OrdBlock`, `OrdYSetId3Cancel`, `InvAutoCreate`, `GenCstFromDtp`, `OrdAsB2C`, `InvJoin`: které jsou standard i6 a které vlastní SWS (vlastní → zdrojový kód) | 9.3, 9.6 | SWS |
@@ -959,10 +1840,14 @@ Max. **5 paralelních požadavků** stejného typu od jednoho dodavatele.
 | 6 | Mapování způsobů dopravy – výsledek dotazu z 9.5 | 9.5 | SWS |
 | 7 | Štítky – kde a jak i6 tiskne štítek pro trasy `ALZA` (sestava / šablona, které parametry čte), jak se tisknou čárové kódy Alzy na kusy (parametr 880); ukázky štítků pro **pobočku** a **DPD** (AlzaBox dodáno 15.11.2026) | 7.3 | SWS |
 | 8 | Screenshoty z ERP i6 – objednávka Alzy v seznamu (rezervační vs. potvrzená), detail objednávky s parametry, vychystání / balení, expedice s čísly balíků, příjemka vratky, souhrnná faktura | 9 | SWS |
-| 9 | DPD pro Alzu – smlouva SWS (DSMD), nebo smlouva Alzy (DSMA)? Vadí Alze, že SWS neposílá Track and Trace ani Delivery result Delivered? | 4, 9.7 | SWS |
+| 9 | DPD pro Alzu – smlouva SWS (DSMD), nebo smlouva Alzy (DSMA)? Vadí Alze, že SWS neposílá Track and Trace ani Delivery result Delivered? Skutečný štítek DPD má odesílatele *Alza a.s. – SWS* (7.4). | 4, 7.4, 9.7 | SWS |
 | 10 | Potvrdit, že Alza SWS nikdy neposílá `shipmentShippingMode = Buyer` | 9.3 | SWS |
 | 11 | Význam: `ExpDateC`, `!E!DDR!`, parametry `1048` / `964` (přeblokování), hodnoty `3821` / `3822` parametru `945` (souhrnná fakturace) | 9.3, 9.6, 9.8, 9.10 | SWS |
 | 12 | Natvrdo zadané výjimky v `SWSDropShipmentDeparture` – jsou ještě potřeba, nebo se dají zrušit? | 9.6, 9.12 | SWS |
-| 13 | Příklady z logu – Delivery result (Canceled i Rejected) a Availability požadavek / odpověď | 9.7, 9.9 | SWS |
+| 13 | **Hotovo** – příklady Delivery result Canceled (`DD26073359`) a Rejected (`DD25313597`) a Availability jsou v 9.16 | 9.7, 9.16 | – |
 | 14 | Kontakty – kdo v SWS má kterou část na starosti (schránky `alzadrop-ph`, `alzadrop-log`, `alzadrop-it`), kontakty na Alzu | předání | SWS |
-| 15 | Chystané změny Alzy 2026: `CompanyAddress`, `ShipmentAddress` (`shipmentDeliveryAddress` se může lišit od `deliveryAddress`), `glnList`, `taxNo`, `vatNo` max. 30 znaků | počítat s tím | ALSO |
+| 15 | EDI – faktura k DPD objednávce `DD26068181`; DESADV a INVOIC ke standardní objednávce `OB26238498` (ORDERS je v 9.19), další EDI zprávy s Alzou (ORDRSP, RECADV, RETANN?), kdo provozuje EDIStore a kdy se faktury generují | 9.18, 9.19 | SWS |
+| 16 | Chystané změny Alzy 2026: `CompanyAddress`, `ShipmentAddress` (`shipmentDeliveryAddress` se může lišit od `deliveryAddress`), `glnList`, `taxNo`, `vatNo` max. 30 znaků | počítat s tím | ALSO |
+| 17 | Zastavit smyčky Delivery result u `DD25388394` a `DD25651998` (Alza je odmítá – kontaktovat podporu AlzaTrade) a ručně nastavit `!DDR!` | 9.20 | SWS |
+| 18 | Log middleware obsahuje při síťových chybách HMAC token – před předáním logy ochránit / vyčistit | 9.20 | SWS |
+| 19 | Jak často Alza stahuje `X-StoItemQtyFreeRealX` / `X-StoItemQtyFreeRealX2`; zda dostupnost přes Trade API používá stejný sklad (`29`) a ceny jako export z WebService | 2 | SWS |
